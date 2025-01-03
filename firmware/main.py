@@ -9,6 +9,7 @@ import time
 import math
 import struct
 import array
+import asyncio
 
 from core import StateMachine, OutputManager, DataProcessor, empty_array, clamp
 
@@ -16,20 +17,26 @@ from core import StateMachine, OutputManager, DataProcessor, empty_array, clamp
 gc.collect()
 
 
-def test_outputs():
+def _test_outputs_asyncio():
 
     buzzer_pin = machine.Pin(2, machine.Pin.OUT)
     led_pin = machine.Pin(19, machine.Pin.OUT)
-
 
     sm = StateMachine()
     states = sm._state_functions.keys()
     out = OutputManager(buzzer_pin=buzzer_pin, led_pin=led_pin)
 
     for state in states:
-        print('test-output-state', state)
-        out.run(state)
-        time.sleep(1.0)
+        sub_states = [0]
+        if state == 'brushing':
+            sub_states = list(range(0, 4))
+        for sub in sub_states:
+            print('test-output-state', state)
+            await out.run(state, sub)
+            asyncio.sleep_ms(1000)
+
+def test_outputs():
+    asyncio.run(_test_outputs_asyncio()) 
 
 
 def main():
@@ -69,43 +76,46 @@ def main():
     # TEST config
     sm.brushing_target_time = 60.0
 
-    while True:
+    def main_task():
 
-        count = mpu.get_fifo_count()
-        if count >= hop_length:
-            start = time.ticks_ms()
+        while True:
 
-            # read data
-            read_start = time.ticks_ms()
-            mpu.read_samples_into(chunk)
-            mpu.deinterleave_samples(chunk, x_values, y_values, z_values)
-            read_duration = time.ticks_ms() - read_start
+            count = mpu.get_fifo_count()
+            if count >= hop_length:
+                start = time.ticks_ms()
 
-            process_start = time.ticks_ms()
-            motion, brushing = processor.process(x_values, y_values, z_values)
-            process_duration = time.ticks_ms() - process_start
-    
-            t = time.time()
-            sm.next(t, motion, brushing)
+                # read data
+                read_start = time.ticks_ms()
+                mpu.read_samples_into(chunk)
+                mpu.deinterleave_samples(chunk, x_values, y_values, z_values)
+                read_duration = time.ticks_ms() - read_start
 
-            print('inputs', t, brushing, motion, sm.state)
+                process_start = time.ticks_ms()
+                motion, brushing = processor.process(x_values, y_values, z_values)
+                process_duration = time.ticks_ms() - process_start
+        
+                t = time.time()
+                sm.next(t, motion, brushing)
 
-            # TODO: put this into state machine
-            brushing_progress_states = 4
-            brushing_progress = clamp(sm.brushing_time / sm.brushing_target_time, 0.0, 0.99)
-            brushing_progress_state = int(brushing_progress * brushing_progress_states)
+                print('inputs', t, brushing, motion, sm.state)
 
-            print('progress state', brushing_progress_state)
+                # TODO: put this into state machine
+                brushing_progress_states = 4
+                brushing_progress = clamp(sm.brushing_time / sm.brushing_target_time, 0.0, 0.99)
+                brushing_progress_state = int(brushing_progress * brushing_progress_states)
 
-            # Update outputs
-            out.run(sm.state, brushing_progress_state)
+                print('progress state', brushing_progress_state, )
 
-            d = time.ticks_diff(time.ticks_ms(), start)
-            print('process', d, read_duration, process_duration)
+                # Update outputs
+                await out.run(sm.state, brushing_progress_state)
 
-        time.sleep_ms(100)
-        #machine.lightsleep(100)
+                d = time.ticks_diff(time.ticks_ms(), start)
+                print('process', d, read_duration, process_duration)
 
+            await asyncio.sleep_ms(100)
+            #machine.lightsleep(100)
+
+    asyncio.run(main_task())
 
 if __name__ == '__main__':
 

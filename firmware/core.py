@@ -7,6 +7,7 @@ import math
 import array
 import gc
 import time
+import asyncio
 
 import emlearn_trees
 import timebased
@@ -288,22 +289,24 @@ progress_1 = """0 C5 1 43;2 D#5 1 43;1 D5 1 43"""
 progress_2 = """0 F5 1 43;1 F#5 1 43;2 G5 1 43"""
 progress_3 = """0 A5 1 43;1 B5 1 43;2 C6 1 43"""
 progress_4 = """0 D6 1 43;1 D#6 1 43;2 F6 1 43"""
-success_song = """0 C6 1 43;1 G5 1 43;2 E5 1 43;4 C5 4 43"""
+success_song = """0 C6 1 43;1 G5 1 43;2 E5 1 43;4 C6 4 43"""
 fail_song = """3 D4 4 43;0 C5 2 43"""
 
 class OutputManager():
 
-    def __init__(self, led_pin, buzzer_pin):
+    def __init__(self, led_pin, buzzer_pin, note_step_ms=30):
 
         self.buzzer_pin = buzzer_pin
         self.led_pin = led_pin
+        self.note_step_ms = note_step_ms
 
         self.last_state = None
         self.last_progress = None
 
-    def _play_song(self, notes):
+    async def _play_song(self, notes):
 
-        # dynamic import, since it is not portable to Unix
+        # NOTE: dynamic import of dependency
+        # since it is not portable to Unix (machine.Pin not defined)
         from buzzer_music import music
 
         song = music(notes, pins=[self.buzzer_pin], looping=False)
@@ -311,9 +314,9 @@ class OutputManager():
             running = song.tick()
             if not running:
                 break
-            time.sleep_ms(30)    
+            await asyncio.sleep_ms(self.note_step_ms)    
 
-    def run(self, state : str, progress_state : int):
+    async def run(self, state : str, progress_state : int):
 
         if state == self.last_state and progress_state == self.last_progress:
             return
@@ -333,14 +336,13 @@ class OutputManager():
                 progress_4,
             ]
             s = songs[progress_state]
-            self._play_song(s)
+            await self._play_song(s)
 
         elif state == 'done':
-            # XXX: blocking
-            self._play_song(success_song)
+            await self._play_song(success_song)
 
         elif state == 'failed':
-            self._play_song(fail_song)
+            await self._play_song(fail_song)
 
         else:
             raise ValueError(f"Unsupported state {state}")
