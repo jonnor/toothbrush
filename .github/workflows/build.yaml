@@ -19,6 +19,8 @@ jobs:
       uses: BrianPugh/install-micropython@v2
       with:
         reference: v1.24.1
+    - name: Install firmware dependencies
+      run: bash -xe less install_unix.sh
     - name: Install Python dependencies
       run: pip install -r requirements.txt
     - name: Run firmware tests
