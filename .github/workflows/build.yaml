@@ -1,0 +1,23 @@
+
+name: Run tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Install OS dependencies
+      run: sudo add-apt-repository universe
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install MicroPython
+      uses: BrianPugh/install-micropython@v2
+    - name: Install Python dependencies
+      run: pip install -r requirements.txt
+    - name: Run firmware tests
+      run: micropython firmware/test_toothbrush.py
