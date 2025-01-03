@@ -120,5 +120,10 @@ def main():
 if __name__ == '__main__':
 
     #test_outputs()
-
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        raise
+    except Exception as e:
+        print('unhandled-exception', e)
+        machine.reset()

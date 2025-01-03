@@ -67,6 +67,7 @@ class StateMachine:
         self.brushing_threshold = 0.6
         self.not_brushing_threshold = 0.4
         self.motion_threshold = 0.3
+        self.brushing_started_time = 10.0
         self.prediction_filter_length = prediction_filter_length
         self.verbose = verbose
 
@@ -144,7 +145,7 @@ class StateMachine:
             return self.BRUSHING
 
         if since_enter > self.idle_time_max:
-            if self.brushing_time > 10.0:
+            if self.brushing_time > self.brushing_started_time:
                 return self.FAILED
             else:
                 # no-one actually started brushing
