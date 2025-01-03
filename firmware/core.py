@@ -198,13 +198,17 @@ def energy_xyz(xs, ys, zs, orientation):
     rms = math.sqrt(s)
     return rms
 
+def dirname(path, sep='/'):
+    parts = path.split(sep)
+    dirname = sep.join(parts[:-1])
+    return dirname
+
+
 class DataProcessor():
 
     def __init__(self):
-        # FIXME: proper lookup
-        here = __file__
-        model_path = './firmware/models/brushing.csv'
-        print('load', model_path)
+        here = dirname(__file__)
+        model_path = here + '/brushing.trees.csv'
         self.brushing_model = self.load_model(model_path)
 
         features_typecode = timebased.DATA_TYPECODE
