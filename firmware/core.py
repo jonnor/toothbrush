@@ -173,6 +173,7 @@ class StateMachine:
             print('sm-done-next', since_enter)
 
         if since_enter >= self.done_wait_time:
+            self.brushing_history = [0.0] * self.prediction_filter_length
             return self.SLEEP
 
     def failed_next(self, time, **kwargs):
@@ -182,6 +183,7 @@ class StateMachine:
             print('sm-failed-next', since_enter)
 
         if since_enter >= self.fail_wait_time:
+            self.brushing_history = [0.0] * self.prediction_filter_length
             return self.SLEEP
 
 
