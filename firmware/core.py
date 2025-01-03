@@ -56,6 +56,7 @@ class StateMachine:
             time=0.0,
             prediction_filter_length=5,
             idle_time_max=30.0,
+            verbose=2,
         ):
 
         # config
@@ -67,6 +68,7 @@ class StateMachine:
         self.not_brushing_threshold = 0.4
         self.motion_threshold = 0.3
         self.prediction_filter_length = prediction_filter_length
+        self.verbose = verbose
 
         # state
         self.state = self.SLEEP
@@ -98,6 +100,14 @@ class StateMachine:
         # return filter outputs
         return self._get_predictions()
 
+    @property
+    def progress_state(self):
+        # Discretized states for how much progress we have made
+        n_states = 4
+        progress = clamp(self.brushing_time / self.brushing_target_time, 0.0, 0.99)
+        state = int(progress * n_states)
+        return state
+
     def next(self, time, motion, brushing):
         # Handle logic common to all states,
         # and then delegate to current state
@@ -106,7 +116,8 @@ class StateMachine:
         func = self._state_functions[self.state]
         next_state = func(**kwargs)
         if not next_state is None:
-            print('transition', self.state, next_state)
+            if self.verbose >= 1:
+                print('sm-transition', self.state, next_state)
             self.state = next_state
             self.state_enter_time = time
         self.last_time = time
@@ -116,7 +127,8 @@ class StateMachine:
         # reset accumulated time
         self.brushing_time = 0.0
 
-        print('sleep-next', motion)
+        if self.verbose >= 2:
+            print('sm-sleep-next', motion)
 
         if motion > self.motion_threshold:
             return self.IDLE
@@ -125,7 +137,8 @@ class StateMachine:
         is_brushing = brushing > self.brushing_threshold
         since_enter = time - self.state_enter_time
 
-        print('idle-next', is_brushing, since_enter)
+        if self.verbose >= 2:
+            print('sm-idle-next', is_brushing, since_enter)
 
         if is_brushing:
             return self.BRUSHING
@@ -139,23 +152,34 @@ class StateMachine:
 
     def brushing_next(self, time, brushing, **kwargs):
         is_idle = brushing < self.not_brushing_threshold
+        since_last = time - self.last_time
+
+        if self.verbose >= 2:
+            print('sm-brushing-next', brushing, is_idle, since_last)
 
         if is_idle:
             return self.IDLE
         else:
             # still brushing
-            since_last = time - self.last_time
             self.brushing_time += since_last
             if self.brushing_time > self.brushing_target_time:
                 return self.DONE
 
     def done_next(self, time, **kwargs):
         since_enter = time - self.state_enter_time
+
+        if self.verbose >= 2:
+            print('sm-done-next', since_enter)
+
         if since_enter >= self.done_wait_time:
             return self.SLEEP
 
     def failed_next(self, time, **kwargs):
         since_enter = time - self.state_enter_time
+
+        if self.verbose >= 2:
+            print('sm-failed-next', since_enter)
+
         if since_enter >= self.fail_wait_time:
             return self.SLEEP
 

@@ -41,6 +41,8 @@ def test_outputs():
 
 def main():
 
+    print('init-start')
+
     mpu = MPU6886(I2C(0, sda=21, scl=22, freq=100000))
 
     # Enable FIFO at a fixed samplerate
@@ -68,15 +70,16 @@ def main():
 
     out = OutputManager(buzzer_pin=buzzer_pin, led_pin=led_pin)
 
-    print('main-start')
-
     processor = DataProcessor()
-    sm = StateMachine(time=time.time())
+    sm = StateMachine(time=time.time(), verbose=1)
 
     # TEST config
     sm.brushing_target_time = 60.0
 
+    print('init-done')
+
     def main_task():
+        print('main-start')
 
         while True:
 
@@ -97,20 +100,17 @@ def main():
                 t = time.time()
                 sm.next(t, motion, brushing)
 
-                print('inputs', t, brushing, motion, sm.state)
+                print('main-inputs', t, brushing, motion, sm.state)
 
-                # TODO: put this into state machine
-                brushing_progress_states = 4
-                brushing_progress = clamp(sm.brushing_time / sm.brushing_target_time, 0.0, 0.99)
-                brushing_progress_state = int(brushing_progress * brushing_progress_states)
-
-                print('progress state', brushing_progress_state, )
+                progress_state = sm.progress_state
+                progress = int(100*(sm.brushing_time / sm.brushing_target_time))
+                print('main-progress', sm.brushing_time, f'{progress}%', progress_state)
 
                 # Update outputs
-                await out.run(sm.state, brushing_progress_state)
+                await out.run(sm.state, progress_state)
 
                 d = time.ticks_diff(time.ticks_ms(), start)
-                print('process', d, read_duration, process_duration)
+                print('main-iter-times', d, read_duration, process_duration)
 
             await asyncio.sleep_ms(100)
             #machine.lightsleep(100)
