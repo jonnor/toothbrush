@@ -1,5 +1,6 @@
 
 from core import StateMachine
+from process import process_file
 
 def run_scenario(sm, trace, default_dt = 0.1):
 
@@ -113,9 +114,28 @@ def test_states_basic_sad():
         check_expectations(row, outputs)
 
 
+def test_processing_happy():
+
+    total_brushing_time = 0.0
+    data_path = 'data/jonnor-brushing-1/testdata/VID_20241231_155624.mkv.npy'
+
+    for res in process_file(data_path):
+        t, motion, brushing, state, brushing_time = res
+        print('toothbrush-state-out', res)
+
+        total_brushing_time = max(brushing_time, total_brushing_time)
+
+    tolerance = 10.0
+    expect_time = 90.0
+    assert total_brushing_time >= expect_time-tolerance, total_brushing_time
+    assert total_brushing_time <= expect_time+tolerance, total_brushing_time
+
+
 def main():
     test_states_basic_happy()
     #test_states_basic_sad()
+
+    test_processing_happy()
 
 if __name__ == '__main__':
     main()
