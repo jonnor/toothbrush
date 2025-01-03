@@ -312,8 +312,13 @@ class OutputManager():
 
     def __init__(self, led_pin, buzzer_pin, note_step_ms=30):
 
+        # dynamic import, since machine.PWM is not available on Unix
+        from machine import PWM
+
         self.buzzer_pin = buzzer_pin
         self.led_pin = led_pin
+        # XXX: on M5Stick PLUS2 using PWM in the audible range causes buzzer to sound =/
+        self.led_pwm = PWM(self.led_pin, freq=100000, duty_u16=0)
         self.note_step_ms = note_step_ms
 
         self.last_state = None
@@ -337,8 +342,18 @@ class OutputManager():
         if state == self.last_state and progress_state == self.last_progress:
             return
 
-        led_on = state == 'brushing'
-        self.led_pin.value(led_on)
+        led_value = 0.0
+        if state == 'brushing':
+            led_value = 0.5
+        elif state == 'idle':
+            led_value = 0.02
+        else:
+            pass
+ 
+        led_duty = int(led_value*(2**16))
+        self.led_pwm.duty_u16(led_duty)
+
+        self.buzzer_pin.value(0)
 
         if state == 'sleep':
             pass
