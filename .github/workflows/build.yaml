@@ -17,6 +17,8 @@ jobs:
         python-version: '3.12'
     - name: Install MicroPython
       uses: BrianPugh/install-micropython@v2
+      with:
+        reference: v1.24.1
     - name: Install Python dependencies
       run: pip install -r requirements.txt
     - name: Run firmware tests
