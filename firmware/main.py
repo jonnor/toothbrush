@@ -10,74 +10,11 @@ import math
 import struct
 import array
 
-from core import StateMachine
-from process import DataProcessor, empty_array, clamp
-from buzzer_music import music  
+from core import StateMachine, OutputManager, DataProcessor, empty_array, clamp
 
 # Free memory used by imports
 gc.collect()
 
-
-# Copy/paste from 
-progress_1 = """0 C5 1 43;2 D#5 1 43;1 D5 1 43"""
-progress_2 = """0 F5 1 43;1 F#5 1 43;2 G5 1 43"""
-progress_3 = """0 A5 1 43;1 B5 1 43;2 C6 1 43"""
-progress_4 = """0 D6 1 43;1 D#6 1 43;2 F6 1 43"""
-success_song = """0 C6 1 43;1 G5 1 43;2 E5 1 43;4 C5 4 43"""
-fail_song = """3 D4 4 43;0 C5 2 43"""
-
-class OutputManager():
-
-    def __init__(self, led_pin, buzzer_pin):
-
-        self.buzzer_pin = buzzer_pin
-        self.led_pin = led_pin
-
-        self.last_state = None
-        self.last_progress = None
-
-    def _play_song(self, notes):
-        song = music(notes, pins=[self.buzzer_pin], looping=False)
-        while True:
-            running = song.tick()
-            if not running:
-                break
-            time.sleep_ms(30)    
-
-    def run(self, state : str, progress_state : int):
-
-        if state == self.last_state and progress_state == self.last_progress:
-            return
-
-        led_on = state == 'brushing'
-        self.led_pin.value(led_on)
-
-        if state == 'sleep':
-            pass
-        elif state == 'idle':
-            pass
-        elif state == 'brushing':
-            songs = [
-                progress_1,
-                progress_2,
-                progress_3,
-                progress_4,
-            ]
-            s = songs[progress_state]
-            self._play_song(s)
-
-        elif state == 'done':
-            # XXX: blocking
-            self._play_song(success_song)
-
-        elif state == 'failed':
-            self._play_song(fail_song)
-
-        else:
-            raise ValueError(f"Unsupported state {state}")
-    
-        self.last_state = state
-        self.last_progress = progress_state
 
 def test_outputs():
 
