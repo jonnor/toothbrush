@@ -235,6 +235,11 @@ def dirname(path, sep='/'):
 class DataProcessor():
 
     def __init__(self):
+
+        # Config
+        self.max_motion_energy = 3000
+
+        # State
         here = dirname(__file__)
         model_path = here + '/brushing.trees.csv'
         self.brushing_model = self.load_model(model_path)
@@ -244,6 +249,7 @@ class DataProcessor():
         self.features = array.array(features_typecode, (0 for _ in range(n_features)))
     
         self.brushing_outputs = array.array('f', (0 for _ in range(2)))
+
 
     def load_model(self, model_path):
 
@@ -259,37 +265,20 @@ class DataProcessor():
         Analyze the accelerometers sensor data, to determine what is happening
         """
 
-        up_direction = [ 0, 1.0, 0.0 ] # the expected gravity vector, when toothbrush is upright (not in use)
-        max_distance_from_up = 0.80
-        max_motion_energy = 3000
-        brushing_energy = 20000
-
         # find orientation
         orientation_start = time.ticks_ms()
         orientation_xyz = mean(xs), mean(ys), mean(zs)
         mag = magnitude_3d(*orientation_xyz)
         norm_orientation = [ c/mag for c in orientation_xyz ]
 
-        distance_from_up = euclidean(norm_orientation, up_direction)
         energy = energy_xyz(xs, ys, zs, orientation_xyz)    
 
-        # dummy motion classifier
-        motion = clamp(energy / max_motion_energy, 0.0, 1.0)
-
-        # dummy brushing classifier
-        # assume brushing if
-        # a) not perfectly upright (stationary in holder)
-        # AND b) relatively high energy
-        # TODO: replace with trained ML classifier
-        not_upright = clamp(distance_from_up / max_distance_from_up, 0.0, 1.0)
-        high_energy = clamp(energy / brushing_energy, 0.0, 1.0)
-
-        dummy_brushing = clamp((not_upright*2) * (high_energy*1.5), 0.0, 1.0)
-    
+        # dummy motion classifier, heuristics
+        motion = clamp(energy / self.max_motion_energy, 0.0, 1.0)
+   
         orientation_duration = time.ticks_ms() - orientation_start
 
-        #norm_orientation, distance_from_up
-
+        # brushing classifier
         # compute features
         features_start = time.ticks_ms()
         ff = timebased.calculate_features_xyz((xs, ys, zs))
