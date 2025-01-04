@@ -5,15 +5,11 @@
 PoC with ML
 
 - Run tests on device
-- Test practical use on device
 - Record more data. Get up to 8 or 10 sessions total.
-- Finish demo video
 - Fix tests for sad case
 
 Misc
 
-- Design a basic dock. With magnetic connector
-https://www.kjell.com/no/produkter/kabler-og-kontakter/usb-kabler/plexgear-magnetisk-usb-c-adapter-p44923
 - Setup quantitative evaluation of time tracking.
 Cut out random selections of time-sections.
 
