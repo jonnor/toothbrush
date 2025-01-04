@@ -42,7 +42,7 @@ Hopefully something similar can be found online.
 
 [FreeCAD project](mechanics/toothbrush-stand.FCStd)
 
-![Toothbrush with stand](toothbrush-withstand_crop.jpg).
+![Toothbrush with stand](./doc/img/toothbrush-withstand_crop.jpg).
 
 
 ## How it is built
