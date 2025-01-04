@@ -71,10 +71,12 @@ def main():
     out = OutputManager(buzzer_pin=buzzer_pin, led_pin=led_pin)
 
     processor = DataProcessor()
-    sm = StateMachine(time=time.time(), verbose=1)
+    sm = StateMachine(time=time.time(), verbose=1, prediction_filter_length=3)
 
     # TEST config
-    sm.brushing_target_time = 60.0
+    sm.brushing_target_time = 10.0
+    sm.idle_time_max = 3.0
+    sm.brushing_started_time = 0.5
 
     print('init-done')
 

@@ -32,76 +32,6 @@ Online Sequencer:923227:0 C5 1 43;2 D#5 1 43;1 D5 1 43;4 F5 1 43;5 F#5 1 43;6 G5
 
 # Data
 
-### Custom dataset
-
-Data collection protocol.
-
-Using har_record.py from har_trees emlearn-micropython example.
-
-Configure the RTC.
-
-Brushing.
-
-Session should be 3 minutes long.
-Start with toothbrush standing.
-Brush like normal.
-Take a number of pauses of 5-10 seconds duration. Around 5-10 pauses per session.
-
-- Swap toothbrush between hands.
-- Hold toothbrush completely still in mouth
-- Take toothbrush out of mouth to talk
-- Put toothbrush down on surface, pick up again
-- Swing arms down
-- Walk around with toothbrush in hand
-- Stretch with arms overhead
-- Drop the toothbrush in the sink
-- Rinse the toothbrush
-- Put more toothpaste on toothbrush
-- Other (subject decides)
-- Check something on the face in the mirror
-- Talk to someone
-- Drink water from tap
-- Turn tap off/on
-- Inspect/poke at teeth
-
-
-Other
-
-- Walking around indoor, toothbrush in hand
-- Walking in stairs, toothbrush in hand
-- Playing swords with toothbrush
-- Sitting down/up, toothbrush in hand
-- Dropping toothbrush onto surface
-- Throwing toothbrush onto surface
-- Toothbrush lying on surface
-- Throwing toothbrush into the air, flipping
-- Tapping on toothbrush
-- Inspecting toothbrush
-- Walking with toothbrush in backpack
-- Driving with X in backpack
-- Biking with X in backpack
-
-Ideally record video. Using phone.
-Time syncronization.
-Tap the brush 5 times to surface at start and end.
-
-N sessions. Want something like 10+.
-N subjects. 
-Between sessions.
-
-Labeling precision target.
-Better than 1 second. Not needed as good as 100 ms.
-
-First target. 5 sessions, 1 subject.
-
-ffmpeg -i input.avi -c:a copy -vf "scale=-2:720" -c:v libx264 -pix_fmt yuv420p -crf 23 output.mkv
-
-ffmpeg -ss 00:03:00 -i input.mkv -c copy output.mp4
-
-Download links in Google Drive
-
-https://drive.google.com/uc?export=download&id=FILEID
-
 
 #### Dataset for toothbrushing activity using brush-attached and wearable sensors
 https://www.sciencedirect.com/science/article/pii/S2352340921005321
@@ -176,7 +106,14 @@ https://www.oralb.co.uk/en-gb/product-collections/genius-x
 An electric toothbrush with "Artificial Intelligence".
 Tracks where you brush in your mouth.
 
+## Ideas
 
+How to get people to actually do their toothbrushing?
+Touge in cheek approaches.
+
+- Tooth-a-ma-gotchi. It will starve if you do not brush enough
+- Shamification-gamification. If you do not brush enough, it will tell your mother/partner/dentist. Communicate via BLE to phone
+- Strava for your teeth. Posts to social media bragging about the "course" that you completed
 
 ## Asides
 

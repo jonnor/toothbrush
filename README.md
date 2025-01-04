@@ -41,7 +41,37 @@ The code used on PC to train machine learning model is found in [software/](./so
 
 #### Data recording
 
-To record data we used the `har_record.py` script from [emlearn-micropython har_trees example](). 
+To record data we used the `har_record.py` script from [emlearn-micropython har_trees example](https://github.com/emlearn/emlearn-micropython/tree/master/examples/har_trees). 
+We also recorded video of the brushing activity using a mobile phone.
+This was used to establish the ground truth.
+See [doc/data_collection.md](doc/data_collection.md) for details.
+
+The raw data from device is stored in `data/jonnor-brushing-1/har_record/`.
+
+#### Data labeling
+
+We use [Label Studio](https://labelstud.io) to annotate the videos.
+The labeling annotation definition can be found in [doc/labeling.xml](doc/labeling.xml).
+
+The labeled data should be exported as .CSV file.
+
+#### Data set preparation
+
+When the data recording and data labeling has been completed, the data can be combined into a dataset.
+
+```
+FIXME: clean up these steps. Move from notebooks into .py files
+```
+
+The output goes to `data/jonnor-brushing-1/combined.parquet`.
+
+
+#### Model training
+
+To train the model we used the `har_train.py` script from [emlearn-micropython har_trees example](https://github.com/emlearn/emlearn-micropython/tree/master/examples/har_trees).
+```
+MIN_SAMPLES_LEAF=0.20,0.30 python har_train.py --dataset toothbrush_jonnor --window-length 50 --window-hop 50
+```
 
 #### Firmware
 
@@ -98,8 +128,19 @@ but is used by some of the tools like for data-recording.
 
 #### Copy application to device
 
+Copy the firmware files
 ```
-TODO: document
+mpremote cp firmware/core.py firmware/processing.py firmware/brushing.trees.csv firmware/main.py :
+```
+
+Start the application and observe log
+```
+mpremote run firmware/main.py
+```
+
+Restart device, will disconnect log
+```
+mpremote reset
 ```
 
 
