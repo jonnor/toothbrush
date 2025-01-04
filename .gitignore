@@ -1,0 +1,12 @@
+
+__pycache__/
+venv/
+.ipynb_checkpoints/
+
+*.step
+*.stl
+*.gcode
+*.3mf
+*.FCBak
+
+
