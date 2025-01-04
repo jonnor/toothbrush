@@ -34,6 +34,17 @@ To assemble the device, one needs the following.
 
 ![Parts before assembly](./doc/img/toothbrush-parts_crop.jpg).
 
+#### Stand
+
+There is also an optional stand for a magnetic charging connector.
+It uses a [Plexgear Magnetic USB-C adapter](https://www.kjell.com/no/produkter/kabler-og-kontakter/usb-kabler/plexgear-magnetisk-usb-c-adapter-p44923).
+Hopefully something similar can be found online.
+
+[FreeCAD project](mechanics/toothbrush-stand.FCStd)
+
+![Toothbrush with stand](toothbrush-withstand_crop.jpg).
+
+
 ## How it is built
 
 The code that runs on device is found in [firmware/](./firmware).
