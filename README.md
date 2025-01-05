@@ -7,17 +7,24 @@ The device helps you get to the 2 minute mark, which is the recommend duration!
 
 This is a demo project for [emlearn-micropython](https://github.com/emlearn/emlearn-micropython),
 a library efficient Machine Learning and Digital Signal Processing for [MicroPython](https://micropython.org/).
-The intent is to be a fun but realistic application of machine learning on microcontrollers,
+The intent is to be a fun and simple, but realistic application, of machine learning on microcontrollers,
 in the area of Human Activity Recognition.
 
 ![One-page visual explainer](doc/img/toothbrush-onepage.png)
 
+## In use
+
+Here is a [short demo video](https://www.youtube.com/shorts/U8TeewQ9t-k).
+
+[![Demo video](doc/img/toothbrush-demo-short_200w.jpg)](https://www.youtube.com/shorts/U8TeewQ9t-k)
+
+
 ## Status
-***Proof of Concept***. Basic functionality tested working on device.
+***Proof of Concept***. Tested working on device.
 
 - Firmware is complete and functional
-- Documentation in *work in progress*
-- Software and training pipeline needs some cleanup
+- Basic documentation on how to reproduce exists
+- Software and training pipeline *needs some cleanup*
 
 ## License
 MIT
