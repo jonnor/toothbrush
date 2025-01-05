@@ -26,6 +26,8 @@ Here is a [short demo video](https://www.youtube.com/shorts/U8TeewQ9t-k).
 - Basic documentation on how to reproduce exists
 - Software and training pipeline *needs some cleanup*
 
+For more details, see [TODO.md](./doc/TODO.md)
+
 ## License
 MIT
 
@@ -178,3 +180,16 @@ micropython firmware/test_toothbrush.py
 ```
 TODO: check tests on device, document how to run
 ```
+
+
+#### Porting to other devices
+
+All the hardware-specific code is located in `main.py`.
+So modifying that is all that should be needed to adapt to another device.
+If there is no buzzer with PWM, you may also want to change `OutputManager`.
+
+Note that the accelerometer driver should use the FIFO,
+to enable sampling data independently from the firmware execution. 
+[More information](https://github.com/orgs/micropython/discussions/15512).
+
+

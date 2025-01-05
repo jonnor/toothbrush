@@ -1,29 +1,4 @@
 
-
-# TODO
-
-PoC with ML
-
-- Run tests on device
-- Record more data. Get up to 8 or 10 sessions total.
-- Fix tests for sad case
-
-Misc
-
-- Setup quantitative evaluation of time tracking.
-Cut out random selections of time-sections.
-
-Later
-
-- Send prediction data over BLE. To phone
-- Send sensor data over BLE. For easier data collection
-- Add battery voltage/power/percent tracking
-- Enable sleeping, test battery life
-
-# Installing
-
-
-
 # Sound design
 
 https://onlinesequencer.net
