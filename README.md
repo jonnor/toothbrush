@@ -150,7 +150,7 @@ but is used by some of the tools like for data-recording.
 
 Copy the firmware files
 ```
-mpremote cp firmware/core.py firmware/processing.py firmware/brushing.trees.csv firmware/main.py :
+mpremote cp firmware/core.py firmware/process.py firmware/brushing.trees.csv firmware/main.py :
 ```
 
 Start the application and observe log
