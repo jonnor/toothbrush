@@ -1,0 +1,12 @@
+groups:
+  - session
+label_column: is_brushing
+time_column: time
+data_columns:
+  - x
+  - y
+  - z
+classes:
+  # - mixed
+  - 'True'
+  - 'False'
