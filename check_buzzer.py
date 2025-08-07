@@ -10,18 +10,17 @@ for p in LEDS:
 #buzzer_pin = Pin()
 value = 1
 
-for i in range(0, 30):
+pwm = PWM(("pwm0", 1), freq=2000, duty_u16=10000)
+print('t', pwm)
 
-    pwm = PWM(("pwm0", i), freq=100, duty_u16=10000)
-    print('t', pwm)
+for x in range(0, 4):
 
-    for x in range(0, 4):
+    value = 1
+    pwm.duty_u16(int(value*(2**16)))
+    time.sleep(0.5)
 
-        value = 0
-        pwm.duty_u16(int(value*(2**16)))
-        time.sleep(0.5)
+    value = 0
+    pwm.duty_u16(int(value*(2**16)))
+    time.sleep(0.5)
 
-        value = 1
-        pwm.duty_u16(int(value*(2**16)))
-        time.sleep(0.5)
 
