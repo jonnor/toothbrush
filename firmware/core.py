@@ -9,7 +9,7 @@ import gc
 import time
 import asyncio
 
-#import emlearn_trees
+import emlearn_trees
 import timebased
 
 def empty_array(typecode, length, value=0):
@@ -252,8 +252,6 @@ class DataProcessor():
 
 
     def load_model(self, model_path):
-        # XXX: enable
-        return None
 
         # Load a CSV file with the model
         model = emlearn_trees.new(10, 1000, 10)
@@ -290,8 +288,7 @@ class DataProcessor():
 
         # run model
         predict_start = time.ticks_ms()
-        # XXX: enable
-        #self.brushing_model.predict(self.features, self.brushing_outputs)
+        self.brushing_model.predict(self.features, self.brushing_outputs)
         brushing = self.brushing_outputs[1]
         predict_duration = time.ticks_ms() - predict_start
 
@@ -356,7 +353,7 @@ class OutputManager():
         led_duty = int(led_value*(2**16))
         self.led_pwm.duty_u16(led_duty)
 
-        #self.buzzer_pin.value(0)
+        self.buzzer_pin.value(0)
 
         if state == 'sleep':
             pass
