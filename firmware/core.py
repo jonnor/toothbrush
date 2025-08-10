@@ -241,6 +241,8 @@ class DataProcessor():
 
         # State
         here = dirname(__file__)
+        if here == '':
+            here = '.'
         model_path = here + '/brushing.trees.csv'
         self.brushing_model = self.load_model(model_path)
 
@@ -352,8 +354,6 @@ class OutputManager():
  
         led_duty = int(led_value*(2**16))
         self.led_pwm.duty_u16(led_duty)
-
-        self.buzzer_pin.value(0)
 
         if state == 'sleep':
             pass
