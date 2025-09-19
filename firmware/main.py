@@ -88,12 +88,12 @@ def main():
         hold_pin.value(1)
 
         from mpu6886 import MPU6886
-        mpu = MPU6886(I2C(0, sda=21, scl=22, freq=100000))
+        imu = MPU6886(I2C(0, sda=21, scl=22, freq=100000))
         # Enable FIFO at a fixed samplerate
-        mpu.fifo_enable(True)
-        mpu.set_odr(samplerate)
+        imu.fifo_enable(True)
+        imu.set_odr(samplerate)
 
-        assert mpu.bytes_per_sample == bytes_per_sample
+        assert imu.bytes_per_sample == bytes_per_sample
 
     elif hardware == HW_XIAO_BLE_SENSE:
         print('hardware-init-xiao-ble-sense')
@@ -105,7 +105,10 @@ def main():
 
         # FIXME: use 52 Hz, and FIFO
         i2c = I2C("i2c0")
-        lsm = lsm6ds.LSM6DS3(i2c, mode=lsm6ds.NORMAL_MODE_104HZ | 0b0000_1000) # 104Hz, FS=4g
+        imu = lsm6ds.LSM6DS3(i2c, mode=lsm6ds.NORMAL_MODE_104HZ | 0b0000_1000) # 104Hz, FS=4g
+
+        imu.fifo_enable(True)
+
 
     else:
         raise ValueError("Unknown hardware: " + hardware)
@@ -132,25 +135,27 @@ def main():
         while True:
 
             # FIXME: implement FIFO support, same/similar API as MPU6886
-            ready = lsm.accel_data_ready()
+            #ready = lsm.accel_data_ready()
+            ready = False
             #print('acc ready', ready, count)
             if ready:
                 xyz = lsm.get_accel_readings()
                 x_values[count] = xyz[0]
                 y_values[count] = xyz[1]
                 z_values[count] = xyz[2]
-                count += 1
+                #count += 1
 
-            #count = mpu.get_fifo_count()
+            count = imu.get_fifo_count()
+            #print('fifo check', count)
             if count >= hop_length:
-                count = 0
+                #count = 0
 
                 start = time.ticks_ms()
 
                 # read data
                 read_start = time.ticks_ms()
 
-                #mpu.read_samples_into(chunk)
+                imu.read_samples_into(chunk)
                 #mpu.deinterleave_samples(chunk, x_values, y_values, z_values)
 
                 read_duration = time.ticks_ms() - read_start
@@ -166,7 +171,7 @@ def main():
 
                 progress_state = sm.progress_state
                 progress = int(100*(sm.brushing_time / sm.brushing_target_time))
-                print('main-progress', sm.brushing_time, f'{progress}%', progress_state)
+                print('main-progress', sm.brushing_time, progress, f'{progress}%', progress_state)
 
                 # Update outputs
                 await out.run(sm.state, progress_state)
@@ -174,7 +179,7 @@ def main():
                 d = time.ticks_diff(time.ticks_ms(), start)
                 print('main-iter-times', d, read_duration, process_duration)
 
-            await asyncio.sleep_ms(1)
+            await asyncio.sleep_ms(10)
             #machine.lightsleep(100)
 
     asyncio.run(main_task())

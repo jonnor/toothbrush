@@ -15,12 +15,12 @@ CTRL3_C = const(0x12)
 CTRL8_XL = const(0x17)
 CTRL10_C = const(0x19)
 STATUS_REG = const(0x1E)
-FIFO_CTRL4 = const(0x0A)
-FIFO_STATUS1 = const(0x1B)
-# Start of data
-# First byte is a TAG (type of sensor data),
-# followed by 6 bytes signed int16 in XYZ order.
-FIFO_DATA_OUT_TAG = const(0x78)
+
+# FIFO registers
+FIFO_CTRL5 = const(0x0A)
+FIFO_STATUS1 = const(0x3A)
+FIFO_DATA_OUT_L = const(0x3E)
+FIFO_CTRL3 = const(0x08)
 
 # This is the start of the data registers for the Gyro and Accelerometer
 # There are 12 Bytes in total starting at 0x23 and ending at 0x2D
@@ -55,31 +55,15 @@ ACCEL_FMT = "<hhh"
 GYRO_FMT = "<hhh"
 COMBO_FMT = "<hhhhhh"
 
-# FIFO_CTRL1 (07h) // watermark. Not needed?
-# FIFO_CTRL2 (08h) // advanced config. Not needed?
-# FIFO_CTRL3 (09h) // Set batch datarate, gyro and accel
-# FIFO_CTRL4 (0Ah) // FIFO mode! Also temp config, enhanced EIS gyro?
-# FIFO mode. FIFO_MODE_[2:0] = 001
-# Continious mode. FIFO_MODE_[2:0] = 110
-# 6.12.8 FIFO reading procedure
-
-# FIFO_STATUS2 (1Ch). DIFF_FIFO_8 
-# FIFO_STATUS1 (1Bh). Unread sensor data
-
-# FIFO_DATA_OUT_TAG. Identify the sensor data in data registers
-# data registers follows direcly after tag, as 6 bytes
-# can maybe be read together in one go?
-#
-# FIFO can be configured quite flexibly, many options for TAG
-# LSM6 has built-in sensor-fusion support, can give orientation vector
-
-
 
 class LSM6DS3:
     def __init__(self, i2c, address=0x6A, mode=NORMAL_MODE_104HZ):
         self.bus = i2c
         self.address = address
         self.mode = mode
+        
+        # preallocate a buffer for tag(1byte) + sample(6bytes)
+        self.sample_buffer = bytearray(7)
 
         # Set gyro mode/enable
         self.bus.writeto_mem(self.address, CTRL2_G, bytearray([self.mode]))
@@ -178,17 +162,35 @@ class LSM6DS3:
         status = self._read_reg(STATUS_REG, 1)
         return (status[0] & 3) == 3
 
-    def fifo_enable(self, enable):
-        pass
+    def fifo_enable(self, enable):        
+
+        FIFO_MODE_CONTINIOUS = 0b110
+
+        # Set FIFO mode
+        val = FIFO_MODE_CONTINIOUS
+
+        # Set ODR
+        val += (0x40 >> 1)
+
+        print('fifo-enable', hex(val))
+        self.bus.writeto_mem(self.address, FIFO_CTRL5, bytearray([val]))
+
+        # Enable gyro and accel without decimation
+        val = 0b00001001
+        self.bus.writeto_mem(self.address, FIFO_CTRL3, bytearray([val]))
+
 
     def get_fifo_count(self):
         """
         Return the number of samples ready in the FIFO
         """
         buf = bytearray(2)
-        self.i2c.readfrom_mem_into(self.address, REG_FIFO_COUNTH, buf)
-        fifo_bytes = struct.unpack('>H', buf)[0]
-        fifo_count = fifo_bytes // self.bytes_per_sample
+        self.bus.readfrom_mem_into(self.address, FIFO_STATUS1, buf)
+        
+        # only 4 bit from FIFO_STATUS2 is part of the count
+        fifo_words = ((buf[1] & 0b1111) << 8) + buf[0]
+        fifo_count = fifo_words // 6 # 3 gyro plus 3 accel
+        #print('fifo count', buf, fifo_words, fifo_count)
         return fifo_count
 
     def read_samples_into(self, buf):
@@ -199,11 +201,21 @@ class LSM6DS3:
         Typically by calling get_fifo_count() first
         """
         n_bytes = len(buf)
-        if (n_bytes % self.bytes_per_sample) != 0:
-            raise ValueError("Buffer should be a multiple of 6")
-        samples = n_bytes // self.bytes_per_sample
-        if n_bytes > 1024:
-            raise ValueError("Requested samples exceeds FIFO capacity")
 
-        REG_FIFO_R_W = 0x74
-        self.i2c.readfrom_mem_into(self.address, REG_FIFO_R_W, buf)
+        temp = bytearray(6)
+
+        start_count = self.get_fifo_count()
+
+        # gyro data is first
+        # acceleration data follows
+        #words = 3*8
+        #for i in range(words):
+        #    self.bus.readfrom_mem_into(self.address, FIFO_DATA_OUT_L, temp)
+
+
+        self.bus.readfrom_mem_into(self.address, FIFO_DATA_OUT_L, buf)
+
+
+        end_count = self.get_fifo_count()
+
+        print('ss', n_bytes, n_bytes//12, start_count, end_count, start_count-end_count)

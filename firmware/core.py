@@ -271,7 +271,10 @@ class DataProcessor():
         orientation_start = time.ticks_ms()
         orientation_xyz = mean(xs), mean(ys), mean(zs)
         mag = magnitude_3d(*orientation_xyz)
-        norm_orientation = [ c/mag for c in orientation_xyz ]
+        if mag == 0:
+            norm_orientation = [ 0.0 for c in orientation_xyz ]
+        else:
+            norm_orientation = [ c/mag for c in orientation_xyz ]
 
         energy = energy_xyz(xs, ys, zs, orientation_xyz)    
 
