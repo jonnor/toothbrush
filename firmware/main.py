@@ -56,7 +56,7 @@ def test_outputs():
     asyncio.run(_test_outputs_asyncio()) 
 
 def deinterleave_samples(buf : bytearray,
-        xs, ys, zs, rowstride=6):
+        xs, ys, zs, rowstride=6, offset=0, format='>hhh'):
     """
     Convert raw bytes into X,Y,Z int16 arrays
     """
@@ -67,8 +67,9 @@ def deinterleave_samples(buf : bytearray,
     assert len(zs) == samples
 
     #view = memoryview(buf)
-    for i in range(samples):
-        x, y, z = struct.unpack_from('>hhh', buf, i*rowstride)
+    for i in range(samples/2):
+        idx = offset + (i*rowstride)
+        x, y, z = struct.unpack_from(format, buf, idx)
         xs[i] = x
         ys[i] = y
         zs[i] = z
@@ -151,29 +152,16 @@ def main():
 
         while True:
 
-            # FIXME: implement FIFO support, same/similar API as MPU6886
-            #ready = lsm.accel_data_ready()
-            ready = False
-            #print('acc ready', ready, count)
-            if ready:
-                xyz = lsm.get_accel_readings()
-                x_values[count] = xyz[0]
-                y_values[count] = xyz[1]
-                z_values[count] = xyz[2]
-                #count += 1
-
             count = imu.get_fifo_count()
             #print('fifo check', count)
             if count >= hop_length:
-                #count = 0
-
                 start = time.ticks_ms()
 
                 # read data
                 read_start = time.ticks_ms()
 
                 imu.read_samples_into(chunk)
-                deinterleave_samples(chunk, x_values, y_values, z_values, rowstride=bytes_per_sample)
+                deinterleave_samples(chunk, x_values, y_values, z_values, rowstride=12, offset=6, format='<hhh')
 
                 read_duration = time.ticks_ms() - read_start
 
