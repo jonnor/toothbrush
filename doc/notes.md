@@ -33,12 +33,48 @@ https://www.sciencedirect.com/science/article/pii/S2352340921005321
 https://data.mendeley.com/datasets/hx5kkkbr3j/1
 https://prod-dcd-datasets-cache-zipfiles.s3.eu-west-1.amazonaws.com/hx5kkkbr3j-1.zip
 
+Hussain et. al, 2021
+
 Toothbrushing data for 120 sessions performed by 22 participants (11 males, 11 females).
 The data was collected using two IMU devices from Mbientlab Inc.
 One device was attached to the brush handle, while the other device was used as wearable (wristwatch on the brushing hand).
 The participants brush their teeth for around two minutes in each session following a pre-given sequence.
+16 sub-activities, corresponding to location being brushed, done in pre-defined order.
+
+! no explicit labels.
 
 235 MB total.
+
+#### UMATBrush
+https://www.sciencedirect.com/science/article/pii/S2352340925007048
+https://figshare.com/articles/dataset/UMATBrush_Traces/28955756
+October 2025.
+
+F.J. González-Cañete, E. Casilari
+Departamento de Tecnología Electrónica, Telecommunication Research Institute (TELMA), Universidad de Málaga
+
+Dataset characteristics
+
+- 4 experimental subjects during their normal life
+- using 3 commercial smartwatches
+- Over 5 hours of toothbrushing activity, and over 140 toothbrushing sessions
+- long periods of monitoring of the subjects during their daily lives, over 200 hours in total
+- binary labelled as either corresponding or not to a toothbrushing session
+- Tri-axial accelerometer, no gyro
+- Samplerate approximately 100 Hz
+
+2.92 GB download.
+Stored as .CSV files.
+
+Table 1. Existing available datasets with sensor data collected with wrist-worn sensors during toothbrushing activities.
+Lists 13 datasets, however vast majority are general Activities of Daily Living (ADL).
+
+Reports toothbrushing power being typically around 4-5Hz.
+
+Notes limited number of participants.
+Expanding the participant pool to cover different age groups and dental conditions would help
+improve the representativeness and applicability of the dataset.
+
 
 ## Hardware
 
