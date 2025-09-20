@@ -5,6 +5,26 @@ https://onlinesequencer.net
 
 Online Sequencer:923227:0 C5 1 43;2 D#5 1 43;1 D5 1 43;4 F5 1 43;5 F#5 1 43;6 G5 1 43;8 A5 1 43;9 B5 1 43;10 C6 1 43;12 D6 1 43;13 D#6 1 43;14 F6 1 43;17 C6 1 43;18 G5 1 43;19 E5 1 43;21 C5 4 43;:
 
+# Hardware support
+
+MicroPython on Zephyr for XIAO BLE Sense NRF52840
+
+Need to have Zephyr 4.2 setup, and a virtualenv with `emlearn` installed.
+
+In MicroPython repository
+
+```
+cd ports/zephyr/zephyrproject-4.2
+source venv/bin/activate
+west build --pristine -b xiao_ble/nrf52840/sense .. -- -DUSER_C_MODULES=/home/jon/projects/micropython/ports/zephyr/emlearn-micropython/src/micropython.cmake
+```
+
+With the `xiao-ble-sense-3` branch.
+Includes MRs for
+
+- https://github.com/micropython/micropython/pull/17679
+- https://github.com/micropython/micropython/issues/17878
+
 # Data
 
 

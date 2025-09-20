@@ -15,6 +15,7 @@ import sys
 sys.path.insert(0, 'lib/') # XXX: why not on path?
 
 from core import StateMachine, OutputManager, DataProcessor, empty_array, clamp
+from recorder import Recorder
 
 import lsm6ds
 
@@ -74,6 +75,27 @@ def deinterleave_samples(buf : bytearray,
         ys[i] = y
         zs[i] = z
 
+def decode_samples(buf : bytearray, samples : array.array, offset=0, format='<hhhhhh'):
+    """
+    Convert raw bytes for gyro+accelerometer into int16 array
+    """
+
+    words_per_sample = (len(format)-1)
+    bytes_per_sample = words_per_sample*2
+    assert words_per_sample == 6
+
+    assert (len(buf) % bytes_per_sample) == 0
+    n_samples = len(buf) // bytes_per_sample
+    assert len(samples) == words_per_sample*n_samples, (len(samples), words_per_sample*n_samples)
+    out_stride = words_per_sample
+
+    #view = memoryview(buf)
+    for i in range(n_samples):
+        idx = offset + (i*bytes_per_sample)
+        values = struct.unpack_from(format, buf, idx)
+        for j, v in enumerate(values):
+            samples[(i*out_stride)+j] = v
+
 def main():
 
     print('init-start')
@@ -81,8 +103,17 @@ def main():
     # Settings
     hop_length = 50
     window_length = hop_length
-    samplerate = 50
+    samplerate = 104 # XXX: must match IMU config
     bytes_per_sample = 12 # FIXME: make MPU also support gyro
+
+    record_enable = True
+    record_duration = 20.0
+    record_dir = 'har_record'
+    record_class = 'brushing'
+    if record_enable:
+        record_buffer = array.array('h', (0 for _ in range(6*hop_length))) # decoded int16
+    else:
+        record_buffer = None
 
     # working buffers
     x_values = empty_array('h', hop_length)
@@ -150,42 +181,52 @@ def main():
 
         count = 0
 
-        while True:
+        with Recorder(samplerate, record_duration, directory=record_dir, items_per_sample=6) as recorder:
 
-            count = imu.get_fifo_count()
-            #print('fifo check', count)
-            if count >= hop_length:
-                start = time.ticks_ms()
+            if record_enable:
+                recorder.set_class(record_class)
+                recorder.start()
 
-                # read data
-                read_start = time.ticks_ms()
+            while True:
 
-                imu.read_samples_into(chunk)
-                deinterleave_samples(chunk, x_values, y_values, z_values, rowstride=12, offset=6, format='<hhh')
+                count = imu.get_fifo_count()
+                #print('fifo check', count)
+                if count >= hop_length:
+                    start = time.ticks_ms()
 
-                read_duration = time.ticks_ms() - read_start
+                    # read data
+                    read_start = time.ticks_ms()
 
-                process_start = time.ticks_ms()
-                motion, brushing = processor.process(x_values, y_values, z_values)
-                process_duration = time.ticks_ms() - process_start
-        
-                t = time.time()
-                sm.next(t, motion, brushing)
+                    imu.read_samples_into(chunk)
+                    deinterleave_samples(chunk, x_values, y_values, z_values, rowstride=12, offset=6, format='<hhh')
 
-                print('main-inputs', t, brushing, motion, sm.state)
+                    if record_enable:
+                        decode_samples(chunk, record_buffer, format='<hhhhhh')
+                        recorder.process(record_buffer)
 
-                progress_state = sm.progress_state
-                progress = int(100*(sm.brushing_time / sm.brushing_target_time))
-                print('main-progress', sm.brushing_time, progress, f'{progress}%', progress_state)
+                    read_duration = time.ticks_ms() - read_start
 
-                # Update outputs
-                await out.run(sm.state, progress_state)
+                    process_start = time.ticks_ms()
+                    motion, brushing = processor.process(x_values, y_values, z_values)
+                    process_duration = time.ticks_ms() - process_start
+            
+                    t = time.time()
+                    sm.next(t, motion, brushing)
 
-                d = time.ticks_diff(time.ticks_ms(), start)
-                print('main-iter-times', d, read_duration, process_duration)
+                    print('main-inputs', t, brushing, motion, sm.state)
 
-            await asyncio.sleep_ms(10)
-            #machine.lightsleep(100)
+                    progress_state = sm.progress_state
+                    progress = int(100*(sm.brushing_time / sm.brushing_target_time))
+                    print('main-progress', sm.brushing_time, progress, f'{progress}%', progress_state)
+
+                    # Update outputs
+                    await out.run(sm.state, progress_state)
+
+                    d = time.ticks_diff(time.ticks_ms(), start)
+                    print('main-iter-times', d, read_duration, process_duration)
+
+                await asyncio.sleep_ms(10)
+                #machine.lightsleep(100)
 
     asyncio.run(main_task())
 

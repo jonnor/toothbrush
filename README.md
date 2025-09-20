@@ -137,10 +137,6 @@ mpremote mip install https://github.com/emlearn/emlearn-micropython/raw/refs/hea
 Additional dependencies to use har_record.py for recording data
 ```
 mpremote mip install https://github.com/emlearn/emlearn-micropython/raw/refs/heads/master/examples/har_trees/recorder.py
-mpremote mip install https://raw.githubusercontent.com/emlearn/emlearn-micropython/refs/heads/master/examples/har_trees/color_setup.py
-mpremote mip install "github:peterhinch/micropython-nano-gui/drivers/st7789"
-mpremote mip install "github:peterhinch/micropython-nano-gui"
-mpremote mip install "github:peterhinch/micropython-async/v3/primitives"
 ```
 
 The GUI libraries are not used by the main firmware,
