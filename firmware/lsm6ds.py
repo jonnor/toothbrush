@@ -17,6 +17,7 @@ CTRL10_C = const(0x19)
 STATUS_REG = const(0x1E)
 
 # FIFO registers
+CTRL5_C = const(0x14)
 FIFO_CTRL5 = const(0x0A)
 FIFO_STATUS1 = const(0x3A)
 FIFO_DATA_OUT_L = const(0x3E)
@@ -57,11 +58,24 @@ COMBO_FMT = "<hhhhhh"
 
 
 class LSM6DS3:
-    def __init__(self, i2c, address=0x6A, mode=NORMAL_MODE_104HZ):
+    def __init__(self, i2c, address=0x6A, mode=NORMAL_MODE_104HZ, reset=True):
         self.bus = i2c
         self.address = address
         self.mode = mode
+
+        # Check that we have the expected type of device
+        ID_LSM6DS3TR_C = 0x6A
+        ID_LSM6DS3 = 0x69
+        val = self._read_reg(WHO_AM_I, 1)[0]
+        if val != ID_LSM6DS3TR_C and val != ID_LSM6DS3:
+            raise ValueError("Incorrect WHO_AM_I")
         
+        # Do a software reset
+        # Useful to ensure we are starting from a clean state
+        # Otherwise FIFO etc might be in a stuck mode
+        if reset:
+            self._write_byte(CTRL3_C, 0x05)
+
         # preallocate a buffer for tag(1byte) + sample(6bytes)
         self.sample_buffer = bytearray(7)
 
@@ -91,6 +105,10 @@ class LSM6DS3:
 
         # enable BDU and IF_INC
         self.bus.writeto_mem(self.address, CTRL3_C, bytearray([0b0100_0100]))
+
+
+    def _write_byte(self, reg, value):
+        self.bus.writeto_mem(self.address, reg, bytearray([value]))
 
     def _read_reg(self, reg, size):
         return self.bus.readfrom_mem(self.address, reg, size)
@@ -171,14 +189,22 @@ class LSM6DS3:
 
         # Set ODR
         val += (0x40 >> 1)
-
-        print('fifo-enable', hex(val))
         self.bus.writeto_mem(self.address, FIFO_CTRL5, bytearray([val]))
 
         # Enable gyro and accel without decimation
         val = 0b00001001
         self.bus.writeto_mem(self.address, FIFO_CTRL3, bytearray([val]))
 
+        # Set "rounding" of the FIFO readout, accel+gyro
+        val = 0b0000_0000
+        val += (0b011 << 5)
+        self.bus.writeto_mem(self.address, CTRL5_C, bytearray([val]))
+
+        # TODO, maybe set STOP_ON_FTH bit of the CTRL4_C and the FIFO limit?
+        # Ref https://community.st.com/t5/mems-sensors/lsm6ds3-fifo-data-corruption-on-random-basis/td-p/270429
+
+        # XXX: 5.5 FIFO, To guarantee the correct acquisition of data during
+        # the switching into and out of FIFO mode, the first sample acquired must be discarded
 
     def get_fifo_count(self):
         """
@@ -195,27 +221,17 @@ class LSM6DS3:
 
     def read_samples_into(self, buf):
         """
-        Read accelerometer samples from the FIFO
+        Read gyro+accelerometer samples from the FIFO
 
         NOTE: caller is responsible for ensuring that enough samples are ready.
         Typically by calling get_fifo_count() first
         """
         n_bytes = len(buf)
+        n_samples = n_bytes // 12
 
-        temp = bytearray(6)
-
-        start_count = self.get_fifo_count()
-
-        # gyro data is first
-        # acceleration data follows
-        #words = 3*8
-        #for i in range(words):
-        #    self.bus.readfrom_mem_into(self.address, FIFO_DATA_OUT_L, temp)
-
-
+        #start_count = self.get_fifo_count()
         self.bus.readfrom_mem_into(self.address, FIFO_DATA_OUT_L, buf)
+        #end_count = self.get_fifo_count()
 
+        #print('read-samples-into', n_bytes, n_samples, start_count-end_count)
 
-        end_count = self.get_fifo_count()
-
-        print('ss', n_bytes, n_bytes//12, start_count, end_count, start_count-end_count)

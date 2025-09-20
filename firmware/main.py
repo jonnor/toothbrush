@@ -55,6 +55,23 @@ def _test_outputs_asyncio():
 def test_outputs():
     asyncio.run(_test_outputs_asyncio()) 
 
+def deinterleave_samples(buf : bytearray,
+        xs, ys, zs, rowstride=6):
+    """
+    Convert raw bytes into X,Y,Z int16 arrays
+    """
+    assert (len(buf) % rowstride) == 0
+    samples = len(buf) // rowstride
+    assert len(xs) == samples
+    assert len(ys) == samples
+    assert len(zs) == samples
+
+    #view = memoryview(buf)
+    for i in range(samples):
+        x, y, z = struct.unpack_from('>hhh', buf, i*rowstride)
+        xs[i] = x
+        ys[i] = y
+        zs[i] = z
 
 def main():
 
@@ -64,7 +81,7 @@ def main():
     hop_length = 50
     window_length = hop_length
     samplerate = 50
-    bytes_per_sample = 6
+    bytes_per_sample = 12 # FIXME: make MPU also support gyro
 
     # working buffers
     x_values = empty_array('h', hop_length)
@@ -156,7 +173,7 @@ def main():
                 read_start = time.ticks_ms()
 
                 imu.read_samples_into(chunk)
-                #mpu.deinterleave_samples(chunk, x_values, y_values, z_values)
+                deinterleave_samples(chunk, x_values, y_values, z_values, rowstride=bytes_per_sample)
 
                 read_duration = time.ticks_ms() - read_start
 
