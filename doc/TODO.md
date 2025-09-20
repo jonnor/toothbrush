@@ -1,29 +1,55 @@
 
 # TODO
 
-#### First PoC
+## Pipeline improvements
 
 - Clean up the ML pipeline for dataset prep
-- Run unit-tests on device
 - Implement tests for sad case
-- Record more data. Get up to 8 or 10 sessions total.
 - Setup quantitative evaluation of the time tracking.
+Note, some starts in the notebooks.
 Cut out random selections of time-sections.
-Respect train/test folds
+Respect train/test folds.
 
-#### Zephyr version
+## Zephyr version
 
 Using XIAO BLE Sense NRF52840.
 Initially with MicroPython, but with an aim to have pure C.
 
-- Board. Assemble complete unit, dry mount in holder
+#### Mini dataset v2
+
+- Setup feature extraction.
+Orientation after low-pass Elliptic. 2-5Hz bandpass energy. Total energy.
+- Record at least 3 sessions
+- Import data with features into Label Studio, do labeling
+- Improve the notes in [data_collection.md](./data_collection.md)
+- Record new demo video. Feature easy mounting onto toothbrush
+
+#### Running in C
+
+Related
+https://github.com/jonnor/zephyr/blob/emlearn-sensor-readout/samples/modules/emlearn/sensor_reader/src/main.c
+
+- Fixup the C feature extraction code.
+- Support running C feature extraction in pipeline. CSV, gcc, and subprocess
+- Setup/run evaluation pipeline on validation/testset on device. CSV
+- Test live predictions on device
+
+Later
+
+- Port LSM6DS3 FIFO driver to C/Zephyr
+- Use .npy instead of .csv
 - Holder. Try add in emlearn logo on bottom
-- Holder. Try place components on a rigid carrier, so it can slide in, like a PCB
-- XIAO. Implement FIFO support in LSM6 driver
-- XIAO. Test entire toothbrush application
+
+## Multi-participant dataset
+
+Ref [data_collection.md](./data_collection.md)
+
+- Get volunteers that are interested in participating
+- Do a trial run at home
+- Schedule a time to do the data recording
 
 
-#### More features
+## More features
 
 Bluetooth connectivity
 

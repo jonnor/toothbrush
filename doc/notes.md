@@ -124,6 +124,28 @@ Freescale AN3461: Tilt Sensing Using a Three-Axis Accelerometer
 https://josejuansanchez.org/android-sensors-overview/gravity_and_linear_acceleration/README.html
 Simple java code using 
 
+
+#### Gravity estimation using lowpass
+
+A Public Domain Dataset for Human Activity Recognition Using Smartphones. Anguita et al (2013)
+
+> The gravitational force is assumed to have only low frequency components,
+> therefore we found from the experiments that 0.3 Hz was an optimal corner frequency for a constant gravity signal.
+! Order not specified. Their other filter was 3rd order.
+
+In "A benchmark for domain adaptation and generalization in smartphone-based human activity recognition"
+https://www.nature.com/articles/s41597-024-03951-4
+
+> The Acc can only sense the total acceleration, so some procedures must be performed to separate the body and gravity acceleration.
+> Several methods described in the literature are suitable for this task.
+> However, the most common involves applying a high-pass Butterworth filter of low order (e.g., order 3) with a cutoff frequency below 1 Hz
+
+In "Frequency Domain Approach for Activity Classification using Accelerometer"
+Chung et al, 2028
+
+> Elliptical IIR High Pass filter (HPF) of seventh order with 0.5 Hz cutoff frequency
+was used to separate the bodily accelerations from the gravity accelerations.
+
 ## Existing products
 
 There are timers.

@@ -76,13 +76,19 @@ NOTE: not used
 - Driving with X in backpack
 - Biking with X in backpack
 
+### Potential confusors
+
+Things that have similar data characteristics.
+Especially those that also can be expected to co-occur in ordinary real-world usage.
+
+Periodic alternating motion with 2-5 Hz.
+Fast walk / jogging / running?
+
 
 # Labeling notes
 
 Labeling precision target.
 Better than 1 second. Not needed as good as 100 ms.
-
-First target. 5 sessions, 1 subject.
 
 ffmpeg -i input.avi -c:a copy -vf "scale=-2:720" -c:v libx264 -pix_fmt yuv420p -crf 23 output.mkv
 
