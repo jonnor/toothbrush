@@ -7,7 +7,6 @@ import os
 import json
 from datetime import datetime, date 
 
-import plotly.express
 import pandas
 import numpy
 
@@ -152,6 +151,36 @@ def apply_labels(data, labels,
     return out
 
 
+def load_videos(path):
+    videos = pandas.read_csv(path)
+
+    gdrive_prefix = 'https://drive.google.com/uc?export=download&id='
+
+    videos['file_time'] = videos.filename.apply(parse_video_filename)
+    videos['gdrive_id'] = videos['data_url'].str.replace(gdrive_prefix, '')
+    videos = videos.drop(columns=['data_url'])
+
+    return videos
+
+def apply_sessions(data, labels, pad_start='30s', pad_end='30s'):
+
+    pad_start = pandas.Timedelta(pad_start)
+    pad_end = pandas.Timedelta(pad_end)
+    
+    df = data.reset_index().set_index('time').sort_index()
+    
+    for idx, ll in labels.groupby('filename'):
+        s = ll['start_time'].min() - pad_start
+        e = ll['end_time'].max() + pad_end
+        s = max(s, df.index.min())
+        e = min(e, df.index.max())
+        print(s, e, idx)
+    
+        # also assosicate the "session"
+        df.loc[s:e, 'session'] = idx
+
+    return df
+
 def load_sensor_data(path, samplerate=50, sensitivity=2.0, columns=None, default_date=None):
 
     files = load_har_record(path, samplerate=samplerate, sensitivity=sensitivity, columns=columns)
@@ -195,6 +224,9 @@ def parse():
     parser.add_argument('--labels', type=str,
                         default=None,
                         help='Path to labels CSV file')
+    parser.add_argument('--sessions', type=str,
+                        default=None,
+                        help='Path sessions metadata file (CSV)')
     parser.add_argument('--out', type=str,
                         default='combined.parquet',
                         help='Output path for combined data (Parquet)')
@@ -219,20 +251,57 @@ def main():
         samplerate=args.samplerate,
         default_date=args.default_date,
     )
+    # drop duplicates
+    data = data.drop_duplicates(subset=['time'])
+
     print(data.head())
     
+    # Load session data
+    sessions = None
+    if args.sessions is not None:
+        sessions = load_videos(args.sessions)
+
     # Load labels
     labels_path = args.labels
     if labels_path is not None:
         labels = read_labels(args.labels)
+        labels_display_columns = [
+            'start',
+            'end',
+            'class',
+            'duration',
+            'gap',
+            'file',
+            'id',
+            'filename',
+        ]
 
-        print(labels)
+        print(sorted(labels.columns))
+        print(labels[labels_display_columns])
+        print(labels['file'].unique())
+
+        # Combine labels with session information
+        # the current data was labeled based on the video, which has the google drive ID as the unique id
+        labels['gdrive_id'] = labels['filename'].str.replace('ucexportdownloadid', '')
+        labels = labels.drop(columns=['data_url', 'file', 'filename'])
+
+        mm = pandas.merge(labels, sessions, left_on='gdrive_id', right_on='gdrive_id')
+        mm = mm.drop(columns=['updated_at', 'created_at', 'lead_time', 'annotator', 'annotation_id', 'activity', 'channel', 'id'])
+        align_label = pandas.to_timedelta(mm['label_alignment'], unit='s')
+        mm['start_time'] = mm['file_time'] + align_label + pandas.to_timedelta(mm['start'], unit='s')
+        mm['end_time'] = mm['file_time'] + align_label + pandas.to_timedelta(mm['end'], unit='s')
+        mm['dummy_filename'] = 'only-one-sensor'
+        mm = mm.drop(columns=['file_time', 'start', 'end'])
+        mm = mm.drop(columns=['gdrive_id'])
+
+        print(mm.head())
 
         # Combine labels and data
-        merged = apply_labels(data, labels)
-        #merged['is_motion'] = ~lb['class'].isin(['docked'])
-        merged['is_brushing'] = lb['class'].isin(['brushing'])
-        merged
+        pre = data.copy()
+        pre['dummy_filename'] = 'only-one-sensor'
+        merged = apply_labels(pre, mm, groupby='dummy_filename', start='start_time', end='end_time')
+        merged = apply_sessions(merged, mm)
+        merged['is_brushing'] = merged['class'].isin(['brushing'])
 
         print(merged.is_brushing.value_counts())
 
