@@ -12,5 +12,9 @@ dependencies = [
 dev = [
     "emlearn",
     "pandas",
-    "",
 ]
+# TODO: add har_trees
+
+[tool.setuptools]
+packages = ["software"]
+

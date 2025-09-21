@@ -113,7 +113,7 @@ Using a virtual environment is recommended.
 Install project dependencies
 
 ```
-pip install -r requirements.txt
+pip install -e .
 ```
 
 #### Flash MicroPython to device
@@ -177,6 +177,18 @@ micropython firmware/test_toothbrush.py
 TODO: check tests on device, document how to run
 ```
 
+#### Training model
+
+```
+TODO: document how to run
+See the Gitlab CI actions
+```
+
+#### Modifying dataset
+
+```
+See doc/data_collection.md
+```
 
 #### Porting to other devices
 
