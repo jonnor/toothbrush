@@ -39,5 +39,10 @@ jobs:
         python-version: '3.12'
     - name: Install Python dependencies
       run: pip install .[dev]
+
+    - name: Install Python dependencies
+      run: pip install emlearn-micropython/examples/har_trees
     - name: Run model train/evaluation
+      env:
+        PYTHONPATH: emlearn-micropython/examples/har_trees
       run: python -m software.model.evaluate --dataset combined --data-dir data/jonnor-brushing-1 --config data/jonnor-brushing-1/config.yaml

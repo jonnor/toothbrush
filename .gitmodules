@@ -1,0 +1,3 @@
+[submodule "emlearn-micropython"]
+	path = emlearn-micropython
+	url = https://github.com/emlearn/emlearn-micropython.git
