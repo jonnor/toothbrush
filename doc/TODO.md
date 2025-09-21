@@ -22,11 +22,10 @@ Initially with MicroPython, but with an aim to have pure C.
 
 #### Mini dataset v2
 
-- Setup feature extraction.
-Orientation after low-pass Elliptic. 2-5Hz bandpass energy. Total energy.
+- Get timeseries/video to work in LabelStudio
 - Record at least 3 sessions
-- Include a Label Studio config
-- Import data with features into Label Studio, do labeling
+- Labeling all the sessions
+- Test output with training pipeline
 - Improve the notes in [data_collection.md](./data_collection.md)
 - Record new demo video. Feature easy mounting onto toothbrush
 
@@ -35,6 +34,7 @@ Orientation after low-pass Elliptic. 2-5Hz bandpass energy. Total energy.
 Related
 https://github.com/jonnor/zephyr/blob/emlearn-sensor-readout/samples/modules/emlearn/sensor_reader/src/main.c
 
+- Implement gravity separation using eml_iir
 - Fixup the C feature extraction code.
 - Support running C feature extraction in pipeline. CSV, gcc, and subprocess
 - Setup/run evaluation pipeline on validation/testset on device. CSV

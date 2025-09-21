@@ -22,6 +22,22 @@ jobs:
     - name: Install firmware dependencies
       run: bash -xe install_unix.sh
     - name: Install Python dependencies
-      run: pip install -r requirements.txt
+      run: pip install .
     - name: Run firmware tests
       run: micropython firmware/test_toothbrush.py
+
+  model:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Install OS dependencies
+      run: sudo add-apt-repository universe
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install Python dependencies
+      run: pip install .[dev]
+    - name: Run model train/evaluation
+      run: python -m software.model.evaluate --dataset combined --data-dir data/jonnor-brushing-1 --config data/jonnor-brushing-1/config.yaml

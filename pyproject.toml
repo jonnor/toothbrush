@@ -1,0 +1,16 @@
+
+[project]
+name = "jonnor-toothbrush"
+version = "0.0.1"
+dependencies = [
+    "mpflash",
+    "esptool",
+    "mpremote",
+]
+
+[project.optional-dependencies]
+dev = [
+    "emlearn",
+    "pandas",
+    "",
+]
