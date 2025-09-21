@@ -1,15 +1,40 @@
-<!-- Configuration for Label Studio -->
 <View>
-    <TimeSeries name="ts" valueType="url" value="$timeseriesUrl" sep="," timeColumn="elapsed" overviewWidth="30s" >
-        <!-- Data is expected to be in range -2G to +2G, each file up to 5 minutes long -->
-      <Channel column="brushing_energy" displayFormat=",.1f" strokeColor="#ff0000" legend="Y" dataRange="-0.0,+1.0"/>
-      <Channel column="brush_orientation" displayFormat=",.1f" strokeColor="#0000ff" legend="X" dataRange="-1.0,+1.0"/>
-    </TimeSeries>
+  <Video name="video" value="$video" frameRate="30" sync="group_a"/>
   
-    <Header value="Classes:"/>
+  <TimeSeriesLabels name="timelinelabels" toName="motion">
+    <Label value="sync"/>
+    <Label value="brushing"/>
+  </TimeSeriesLabels>  
+
+  <TimeSeries 
+              name="orientation"
+              value="$sensor_data"
+              sync="group_a"
+              timeColumn="time"
+              timeFormat="%H:%M:%S.%f"
+              timeDisplayFormat="%H:%M:%S.%f"
+              overviewWidth="10%"
+              fixedScale="true"
+  >
+    <MultiChannel>
+      <Channel column="tilt" strokeColor="#FF0000" height="100"/>
+      <Channel column="pitch" strokeColor="#00FF00" height="100"/>
+    </MultiChannel>
+  </TimeSeries>
   
-  	<TimeSeriesLabels name="label" toName="ts">
-      <Label value="docked"/>
-      <Label value="brushing"/>
-	</TimeSeriesLabels>
+  <TimeSeries 
+              name="motion" 
+              value="$sensor_data"
+              sync="group_a"
+              timeColumn="time"
+              timeFormat="%H:%M:%S.%f"
+              timeDisplayFormat="%H:%M:%S.%f"
+              overviewWidth="10%"
+              fixedScale="true"
+  >
+    <Channel column="linear_acc_x" strokeColor="#0000FF" height="100"/>
+    <Channel column="linear_acc_y" strokeColor="#FF00FF" height="100"/>
+    <Channel column="linear_acc_z" strokeColor="#00FF00" height="100"/>
+  </TimeSeries>
+
 </View>
