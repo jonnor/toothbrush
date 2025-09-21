@@ -19,11 +19,31 @@ source venv/bin/activate
 west build --pristine -b xiao_ble/nrf52840/sense .. -- -DUSER_C_MODULES=/home/jon/projects/micropython/ports/zephyr/emlearn-micropython/src/micropython.cmake
 ```
 
+
+
 With the `xiao-ble-sense-3` branch.
 Includes MRs for
 
 - https://github.com/micropython/micropython/pull/17679
 - https://github.com/micropython/micropython/issues/17878
+
+# Dataset
+
+## sss
+
+```
+python -m software.dataset.combine \
+    --data ./data/xiao-test-2/har_record \
+    --samplerate 104 \
+    --columns gyro_x,gyro_y,gyro_z,acc_x,acc_y,acc_z \
+    --default-date 2024-09-20 \
+    --out combined2.parquet
+```
+
+ss
+```
+python -m software.dataset.labeling_prepare --data data/xiao-test-2/har_record/ --out data/xiao-test-2/for_labeling --samplerate 104 --columns gyro_x,gyro_y,gyro_z,acc_x,acc_y,acc_z --default-date 2024-09-20
+```
 
 # Data
 
@@ -123,6 +143,12 @@ Freescale AN3461: Tilt Sensing Using a Three-Axis Accelerometer
 
 https://josejuansanchez.org/android-sensors-overview/gravity_and_linear_acceleration/README.html
 Simple java code using 
+
+ahrs Python library has excellent explanations of the various methods.
+Using different combinations of accel/gyro/magnetometer.
+https://ahrs.readthedocs.io/en/latest/filters.html
+https://ahrs.readthedocs.io/en/latest/filters/tilt.html
+https://ahrs.readthedocs.io/en/latest/filters/complementary.html
 
 
 #### Gravity estimation using lowpass

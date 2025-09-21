@@ -5,7 +5,7 @@ import numpy
 from scipy.signal import iirfilter, sosfiltfilt
 
 def create_lowpass(samplerate, cutoff=0.5, order=4):
-    nyquist = sample_rate / 2
+    nyquist = samplerate / 2
     normalized_cutoff = cutoff / nyquist
     
     # NOTE: in theory an Elliptic filter would allow sharper transition

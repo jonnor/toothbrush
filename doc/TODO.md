@@ -3,12 +3,17 @@
 
 ## Pipeline improvements
 
-- Clean up the ML pipeline for dataset prep
-- Implement tests for sad case
+- Have steps for going from raw .npy data to trained model
+Prepare the data for labeling with Label Studio. Output CSV. Copy example from har_trees
+Merge in the labels. software.dataset.combine
+Run har_train.py
+- Add a Github Action which runs this
 - Setup quantitative evaluation of the time tracking.
 Note, some starts in the notebooks.
 Cut out random selections of time-sections.
 Respect train/test folds.
+- Implement tests for state machine for sad case
+
 
 ## Zephyr version
 
@@ -20,6 +25,7 @@ Initially with MicroPython, but with an aim to have pure C.
 - Setup feature extraction.
 Orientation after low-pass Elliptic. 2-5Hz bandpass energy. Total energy.
 - Record at least 3 sessions
+- Include a Label Studio config
 - Import data with features into Label Studio, do labeling
 - Improve the notes in [data_collection.md](./data_collection.md)
 - Record new demo video. Feature easy mounting onto toothbrush
