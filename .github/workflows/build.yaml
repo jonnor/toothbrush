@@ -46,3 +46,21 @@ jobs:
       env:
         PYTHONPATH: emlearn-micropython/examples/har_trees
       run: python -m software.model.evaluate --dataset combined --data-dir data/jonnor-brushing-1 --config data/jonnor-brushing-1/config.yaml
+
+  dataset:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Install OS dependencies
+      run: sudo add-apt-repository universe
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install Python dependencies
+      run: pip install .[dev]
+    - name: Create combined dataset from sensor-data and labels
+      env:
+        PYTHONPATH: emlearn-micropython/examples/har_trees
+      run: python -m software.dataset.combine --data ./data/jonnor-brushing-1/har_record/ --samplerate 50 --columns acc_x,acc_y,acc_z --out combined2.parquet --labels data/jonnor-brushing-1/labels/project-7-at-2024-12-31-23-50-84589958.csv  --sessions data/jonnor-brushing-1/videos.csv
