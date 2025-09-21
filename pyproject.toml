@@ -10,11 +10,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "emlearn",
     "pandas",
-    "emlearn-har-trees@git+https://github.com/emlearn/emlearn-micropython@master#subdirectory=examples/har_trees",
 ]
-# TODO: add har_trees
 
 [tool.setuptools]
 packages = ["software"]
