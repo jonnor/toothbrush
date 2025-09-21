@@ -1,33 +1,26 @@
 
 # TODO
 
-## Pipeline improvements
+## Flex handle
 
-- Have steps for going from raw .npy data to trained model
-Prepare the data for labeling with Label Studio. Output CSV. Copy example from har_trees
-Merge in the labels. software.dataset.combine
-Run har_train.py
-- Add a Github Action which runs this
-- Setup quantitative evaluation of the time tracking.
-Note, some starts in the notebooks.
-Cut out random selections of time-sections.
-Respect train/test folds.
-- Implement tests for state machine for sad case
+- Record new demo video.
+Previous version needed to use zipties, was quite large.
+Easy mounting onto toothbrush, without any tools.
+Tested on variety of brushes I could find in the store, from thinnest to the thickest.
+Printed in flexible TPU, using NinjaFlex
 
-
-## Zephyr version
+## Zephyr firmware version
 
 Using XIAO BLE Sense NRF52840.
-Initially with MicroPython, but with an aim to have pure C.
+Initially with MicroPython, but with an aim to have pure C version.
 
 #### Mini dataset v2
 
 - Get timeseries/video to work in LabelStudio
 - Record at least 3 sessions
-- Labeling all the sessions
-- Test output with training pipeline
+- Label all the sessions
+- Test data using the dataset and training pipelines
 - Improve the notes in [data_collection.md](./data_collection.md)
-- Record new demo video. Feature easy mounting onto toothbrush
 
 #### Running in C
 
@@ -54,6 +47,14 @@ Ref [data_collection.md](./data_collection.md)
 - Do a trial run at home
 - Schedule a time to do the data recording
 
+
+## Pipeline improvements
+
+- Setup quantitative evaluation of the time tracking.
+Note, some starts in the notebooks.
+Cut out random selections of time-sections.
+Respect train/test folds.
+- Implement tests for state machine for sad case
 
 ## More features
 
