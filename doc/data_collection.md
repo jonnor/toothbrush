@@ -117,7 +117,7 @@ For labeling
 
     Video. One video (URL) per session
     Timeseries. One CSV per session
-    Labeling list. CSV/JSON with one row per session, URLs to video and timeseries
+    Task list. CSV/JSON with one row per session. URL for video and timeseries
     Annotation template
 
 After labeling
