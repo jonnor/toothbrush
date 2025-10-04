@@ -52,7 +52,7 @@ def _test_outputs_asyncio():
 def test_outputs():
     asyncio.run(_test_outputs_asyncio()) 
 
-def deinterleave_samples(buf : bytearray,
+def deinterleave_samples_xiao(buf : bytearray,
         xs, ys, zs, rowstride=6, offset=0, format='>hhh'):
     """
     Convert raw bytes into X,Y,Z int16 arrays
@@ -63,7 +63,24 @@ def deinterleave_samples(buf : bytearray,
     assert len(ys) == samples
     assert len(zs) == samples
 
-    #view = memoryview(buf)
+    for i in range(samples):
+        idx = offset + (i*rowstride)
+        x, y, z = struct.unpack_from(format, buf, idx)
+        xs[i] = y
+        ys[i] = x
+        zs[i] = -z
+
+def deinterleave_samples_m5stick(buf : bytearray,
+        xs, ys, zs, rowstride=6, offset=0, format='>hhh'):
+    """
+    Convert raw bytes into X,Y,Z int16 arrays
+    """
+    assert (len(buf) % rowstride) == 0
+    samples = len(buf) // rowstride
+    assert len(xs) == samples
+    assert len(ys) == samples
+    assert len(zs) == samples
+
     for i in range(samples):
         idx = offset + (i*rowstride)
         x, y, z = struct.unpack_from(format, buf, idx)
@@ -158,6 +175,7 @@ def main():
 
         assert imu.bytes_per_sample == bytes_per_sample,\
             (imu.bytes_per_sample, bytes_per_sample)
+        deinterleave_samples = deinterleave_samples_m5stick
 
     elif hardware == HW_XIAO_BLE_SENSE:
         print('hardware-init-xiao-ble-sense')
@@ -177,6 +195,7 @@ def main():
         imu = lsm6ds.LSM6DS3(i2c, mode=lsm6ds.MODE_52HZ | 0b0000_1000)
 
         imu.fifo_enable(True)
+        deinterleave_samples = deinterleave_samples_xiao
 
 
     else:

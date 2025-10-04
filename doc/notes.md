@@ -20,12 +20,31 @@ west build --pristine -b xiao_ble/nrf52840/sense .. -- -DUSER_C_MODULES=/home/jo
 ```
 
 
-
 With the `xiao-ble-sense-3` branch.
 Includes MRs for
 
 - https://github.com/micropython/micropython/pull/17679
 - https://github.com/micropython/micropython/issues/17878
+
+## Sensor orientation
+
+Mostly upright, slight angle towards mounth
+
+Original XIAO BLE NRF52
+o [0.7400785, -0.045787996, 0.67096]
+
+M5Stick C PLUS 2
+o [-0.07880917, 0.8844804, -0.4598734] 1055.342
+
+
+45 deg down to left
+Stick
+o [0.5536062, -0.8327353, 0.008475677] 1398.014
+
+XIAO
+o [-0.7513735, 0.6585, -0.0426102] 791.2596
+
+To map XIAO to Stick orientation, need to have X,Y,Z = Y,X,-Z
 
 # Dataset
 
