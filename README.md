@@ -116,31 +116,42 @@ Install project dependencies
 pip install -e .
 ```
 
-#### Flash MicroPython to device
 
-Uses MicroPython 1.24 for ESP32
+## For M5Stack M5Stick C PLUS 2 
+
+Flash device with MicroPython for ESP32
 
 ```
 mpflash flash --version 1.24
 ```
 
-#### Copy dependencies to device
+Copy dependencies to device
 
-Minimum requirements
 ```
 mpremote mip install https://emlearn.github.io/emlearn-micropython/builds/master/xtensawin_6.3/emlearn_trees.mpy
 mpremote mip install github:jonnor/micropython-npyfile
 mpremote mip install github:jonnor/micropython-mpu6886
 mpremote mip install https://github.com/emlearn/emlearn-micropython/raw/refs/heads/master/examples/har_trees/timebased.py
-```
-
-Additional dependencies to use har_record.py for recording data
-```
 mpremote mip install https://github.com/emlearn/emlearn-micropython/raw/refs/heads/master/examples/har_trees/recorder.py
 ```
 
-The GUI libraries are not used by the main firmware,
-but is used by some of the tools like for data-recording.
+## For XIAO BLE Sense NRF52840 
+
+Flash device with MicroPython
+
+```
+TODO: provide pre-built firmware
+```
+
+Copy dependencies to device
+```
+mpremote mip install --target lib https://emlearn.github.io/emlearn-micropython/builds/master/armv7m_6.3/emlearn_trees.mpy
+mpremote mip install --target lib github:jonnor/micropython-npyfile
+mpremote mip install --target lib https://github.com/emlearn/emlearn-micropython/raw/refs/heads/master/examples/har_trees/timebased.py
+mpremote mip install --target lib https://github.com/emlearn/emlearn-micropython/raw/refs/heads/master/examples/har_trees/recorder.py
+mpremote cp firmware/lsm6ds.py :lib/
+```
+
 
 #### Copy application to device
 
