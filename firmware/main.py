@@ -64,7 +64,7 @@ def deinterleave_samples(buf : bytearray,
     assert len(zs) == samples
 
     #view = memoryview(buf)
-    for i in range(samples/2):
+    for i in range(samples):
         idx = offset + (i*rowstride)
         x, y, z = struct.unpack_from(format, buf, idx)
         xs[i] = x
