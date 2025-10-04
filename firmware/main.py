@@ -1,8 +1,6 @@
 
-
 import machine
 from machine import Pin, I2C
-
 
 import gc
 import time
@@ -17,13 +15,11 @@ sys.path.insert(0, 'lib/') # XXX: why not on path?
 from core import StateMachine, OutputManager, DataProcessor, empty_array, clamp
 from recorder import Recorder
 
-import lsm6ds
-
 HW_M5STICK_PLUS2 = 'm5stick-plus2'
 HW_XIAO_BLE_SENSE = 'xiao-ble-sense'
 
-hardware = HW_XIAO_BLE_SENSE # TODO: autodetect ?
-
+is_m5stick = 'ESP32' in sys.implementation._machine
+hardware = HW_M5STICK_PLUS2 if is_m5stick else HW_XIAO_BLE_SENSE
 
 # Free memory used by imports
 gc.collect()
@@ -75,23 +71,27 @@ def deinterleave_samples(buf : bytearray,
         ys[i] = y
         zs[i] = z
 
-def decode_samples(buf : bytearray, samples : array.array, offset=0, format='<hhhhhh'):
+def decode_samples(
+        buf : bytearray,
+        samples : array.array,
+        rowstride,
+        offset=0,
+        format='<hhhhhh',
+    ):
     """
     Convert raw bytes for gyro+accelerometer into int16 array
     """
 
-    words_per_sample = (len(format)-1)
-    bytes_per_sample = words_per_sample*2
-    assert words_per_sample == 6
+    in_stride = rowstride
+    assert (len(buf) % in_stride) == 0
+    n_samples = len(buf) // in_stride
 
-    assert (len(buf) % bytes_per_sample) == 0
-    n_samples = len(buf) // bytes_per_sample
-    assert len(samples) == words_per_sample*n_samples, (len(samples), words_per_sample*n_samples)
-    out_stride = words_per_sample
+    out_stride = len(format)-1
+    assert len(samples) == out_stride*n_samples, (len(samples), out_stride*n_samples)
 
     #view = memoryview(buf)
     for i in range(n_samples):
-        idx = offset + (i*bytes_per_sample)
+        idx = offset + (i*in_stride)
         values = struct.unpack_from(format, buf, idx)
         for j, v in enumerate(values):
             samples[(i*out_stride)+j] = v
@@ -103,15 +103,29 @@ def main():
     # Settings
     hop_length = 50
     window_length = hop_length
-    samplerate = 104 # XXX: must match IMU config
-    bytes_per_sample = 12 # FIXME: make MPU also support gyro
+
+    # FIXME: standardize configuration between hardwares
+    if hardware == HW_M5STICK_PLUS2:
+        samplerate = 50
+        accel_offset = 0 # data is AxAyAzTc
+        accel_format = '>hhh'
+        # FIXME: make MPU also support gyro
+        bytes_per_sample = 8 
+        record_format = '>hhh'
+    else:
+        samplerate = 52
+        bytes_per_sample = 12
+        accel_offset = 6 # data is GxGyGzAxAyAz
+        record_format = '<hhhhhh'
+        accel_format = '<hhh'
 
     record_enable = True
     record_duration = 20.0
     record_dir = 'har_record'
     record_class = 'brushing'
     if record_enable:
-        record_buffer = array.array('h', (0 for _ in range(6*hop_length))) # decoded int16
+        record_samples = len(record_format) - 1
+        record_buffer = array.array('h', (0 for _ in range(record_samples*hop_length))) # decoded int16
     else:
         record_buffer = None
 
@@ -142,12 +156,14 @@ def main():
         imu.fifo_enable(True)
         imu.set_odr(samplerate)
 
-        assert imu.bytes_per_sample == bytes_per_sample
+        assert imu.bytes_per_sample == bytes_per_sample,\
+            (imu.bytes_per_sample, bytes_per_sample)
 
     elif hardware == HW_XIAO_BLE_SENSE:
         print('hardware-init-xiao-ble-sense')
         time.sleep(1)
 
+        import lsm6ds
         led_pin = ("pwm0", 0)
         # PWM1 is mapped to GPIO pins using Zephyr .overlay
         buzzer_pin = ("pwm0", 1)
@@ -184,6 +200,7 @@ def main():
         with Recorder(samplerate, record_duration, directory=record_dir, items_per_sample=6) as recorder:
 
             if record_enable:
+                #recorder.delete()
                 recorder.set_class(record_class)
                 recorder.start()
 
@@ -198,10 +215,12 @@ def main():
                     read_start = time.ticks_ms()
 
                     imu.read_samples_into(chunk)
-                    deinterleave_samples(chunk, x_values, y_values, z_values, rowstride=12, offset=6, format='<hhh')
+                    deinterleave_samples(chunk, x_values, y_values, z_values,
+                        rowstride=bytes_per_sample, offset=accel_offset, format=accel_format)
 
                     if record_enable:
-                        decode_samples(chunk, record_buffer, format='<hhhhhh')
+                        decode_samples(chunk, record_buffer,
+                            format=record_format, rowstride=bytes_per_sample)
                         recorder.process(record_buffer)
 
                     read_duration = time.ticks_ms() - read_start
