@@ -173,7 +173,8 @@ def main():
 
         # FIXME: use 52 Hz, and FIFO
         i2c = I2C("i2c0")
-        imu = lsm6ds.LSM6DS3(i2c, mode=lsm6ds.NORMAL_MODE_104HZ | 0b0000_1000) # 104Hz, FS=4g
+        assert samplerate == 52
+        imu = lsm6ds.LSM6DS3(i2c, mode=lsm6ds.MODE_52HZ | 0b0000_1000)
 
         imu.fifo_enable(True)
 
