@@ -145,7 +145,6 @@ TODO: provide pre-built firmware
 
 Copy dependencies to device
 ```
-mpremote mip install --target lib https://emlearn.github.io/emlearn-micropython/builds/master/armv7m_6.3/emlearn_trees.mpy
 mpremote mip install --target lib github:jonnor/micropython-npyfile
 mpremote mip install --target lib https://github.com/emlearn/emlearn-micropython/raw/refs/heads/master/examples/har_trees/timebased.py
 mpremote mip install --target lib https://github.com/emlearn/emlearn-micropython/raw/refs/heads/master/examples/har_trees/recorder.py
