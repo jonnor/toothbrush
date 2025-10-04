@@ -31,8 +31,8 @@ def _test_outputs_asyncio():
     #led_pin = machine.Pin(19, machine.Pin.OUT)
 
     # On XIAO BLE, pin 6, 26, 30 has RGB LED
-    #led_pin = ("gpio0", 26)
-    led_pin = ("pwm0", 0)
+    led_pin = ("gpio0", 26)
+    #led_pin = ("pwm0", 0)
     # PWM1 is mapped to GPIO pins using Zephyr .overlay
     buzzer_pin = ("pwm0", 1)
 
@@ -164,7 +164,10 @@ def main():
         time.sleep(1)
 
         import lsm6ds
-        led_pin = ("pwm0", 0)
+        # On XIAO BLE, pin 6, 26, 30 has RGB LED
+        led_pin = ("gpio0", 26)
+        # Using PWM on the same bank as buzzer does not work
+        #led_pin = ("pwm0", 0)
         # PWM1 is mapped to GPIO pins using Zephyr .overlay
         buzzer_pin = ("pwm0", 1)
 

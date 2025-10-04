@@ -315,7 +315,7 @@ fail_song = """3 D4 4 43;0 C5 2 43"""
 
 class OutputManager():
 
-    def __init__(self, led_pin, buzzer_pin, note_step_ms=30):
+    def __init__(self, led_pin, buzzer_pin, note_step_ms=50, duty=10000):
 
         # dynamic import, since machine.PWM is not available on Unix
         from machine import PWM
@@ -325,6 +325,7 @@ class OutputManager():
         # XXX: on M5Stick PLUS2 using PWM in the audible range causes buzzer to sound =/
         self.led_pwm = PWM(self.led_pin, freq=100000, duty_u16=0)
         self.note_step_ms = note_step_ms
+        self.duty = duty
 
         self.last_state = None
         self.last_progress = None
@@ -335,7 +336,7 @@ class OutputManager():
         # since it is not portable to Unix (machine.Pin not defined)
         from buzzer_music import music
 
-        song = music(notes, pins=[self.buzzer_pin], looping=False)
+        song = music(notes, pins=[self.buzzer_pin], looping=False, duty=self.duty)
         while True:
             running = song.tick()
             if not running:
