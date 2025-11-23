@@ -1,0 +1,24 @@
+
+dataset:
+    name: 'toothbrushing_jonnor_1'
+    groups:
+      - session
+    samplerate: 50
+    label_column: is_brushing
+    time_column: time
+    accelerometer_columns:
+      - x
+      - y
+      - z
+    classes:
+      # - mixed
+      - 'True'
+      - 'False'
+
+preprocessing:
+    name: 'motion_preprocess'
+    window_length: 128
+    hop_length: 64
+    extractor: 'program'
+    program: ['/home/jon/projects/emlearn/examples/motion_recognition/build/motion_preprocess']
+    columns: ['time', 'acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z']
