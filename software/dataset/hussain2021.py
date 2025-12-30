@@ -9,16 +9,17 @@ https://data.mendeley.com/datasets/hx5kkkbr3j/1
 
 import os
 import zipfile
+import json
 
 import pandas
 from ..utils.downloadutils import download_file, checksum_file
 from software.features.featureutils import resample
 
 
-dataset_url = 'https://prod-dcd-datasets-cache-zipfiles.s3.eu-west-1.amazonaws.com/hx5kkkbr3j-1.zip'
-dataset_sha1 = '96d0de3756c566627be816fca96ca4dc8c5dcf6c'
-dataset_filename = 'hx5kkkbr3j-1.zip'
-dataset_top_dir = 'hussain2021'
+dataset_url = 'https://zenodo.org/records/4118900/files/Zawar_Hussain-Toothbrushing_Data_and_Analysis_of_its_Potential_Use_in_Human_Activity_Recognition_Applications.zip?download=1'
+dataset_sha1 = '56c20104e2a566f8e54f1656defd6ff15e924454'
+dataset_filename = 'Toothbrushing_Data.zip'
+dataset_top_dir = 'data'
 
 
 def load_data(dataset_path):
@@ -27,7 +28,8 @@ def load_data(dataset_path):
     Expects dataset to have layout of the following form:
     
     ROOT
-    ├── Read Me.txt
+    ├── DESCRIPTION.md
+    ....
     ├── S1-S10-S1-M-R-AW-30-E-3-AG
     │   ├── S1-S10-S1-M-R-A-30-E-3-A.csv
     ....
@@ -35,40 +37,83 @@ def load_data(dataset_path):
 
     dfs = []
     session_no = 0
+    rows = 0
+
+    out_columns = {
+        'epoc (ms)': 'time',
+        'elapsed (s)': 'elapsed',
+        'x-axis (g)': 'acc_x',
+        'y-axis (g)': 'acc_y',
+        'z-axis (g)': 'acc_z',
+        'x-axis (deg/s)': 'gyro_x',
+        'y-axis (deg/s)': 'gyro_y',
+        'z-axis (deg/s)': 'gyro_z',
+    }
+
     for d in os.listdir(dataset_path):
-        if d in ('Read Me.txt', ):
+        if d in ('DESCRIPTION.md', 'sample', 'metadata.json'):
             continue
         for f in os.listdir(os.path.join(dataset_path, d)):
             p = os.path.join(dataset_path, d, f)
             df = pandas.read_csv(p)
+            other_columns = set(df.columns) - set(out_columns.keys())
+            #print(df.head(10))
+            df = df.drop(columns=other_columns)
             df['filename'] = f
             #df['dirname'] = d
                 
             dfs.append(df)
             session_no += 1
-            
+            rows += len(df)
+            #break
 
-    out = pandas.concat(dfs)
-
+    print('files', len(dfs), rows)
+    out = pandas.concat(dfs, axis=0, ignore_index=True)
+    print('concat', out.shape, out.columns)
+    
     # Get out time information
     out['time'] = pandas.to_datetime(out['epoc (ms)'], unit='ms')
-    out = out.drop(columns=['timestamp (+1100)', 'timestamp (+1000)', 'epoc (ms)']) # redundant wrt 'time'
+    out = out.drop(columns=['epoc (ms)'])
 
     # Drop units from colum names
-    out = out.rename(columns={
-        'elapsed (s)': 'elapsed',
-        'x-axis (g)': 'acc_x',
-        'y-axis (g)': 'acc_y',
-        'z-axis (g)': 'acc_z',
-        'x-axis (T)': 'mag_x',
-        'y-axis (T)': 'mag_y',
-        'z-axis (T)': 'mag_z',
-        'x-axis (deg/s)': 'gyro_x',
-        'y-axis (deg/s)': 'gyro_y',
-        'z-axis (deg/s)': 'gyro_z',
-    })
+    out = out.rename(columns=out_columns)
     return out
 
+def load_labels(dataset_path):
+
+    dfs = []
+    missing_labels = []
+    for d in os.listdir(dataset_path):
+        if d in ('DESCRIPTION.md', 'sample', 'metadata.json'):
+            continue
+
+        # Labels are per session / dirname
+        labels_path = os.path.join(dataset_path, d, 'labels.json')
+        if not os.path.exists(labels_path):
+            missing_labels.append(filename)
+            continue
+    
+        # Load and normalize label info
+        labels = json.loads(open(labels_path).read())
+        label_events = []
+        for classname, (start, end) in labels.items():
+            event = {
+                'label': classname,
+                'start': pandas.Timestamp(start),
+                'end': pandas.Timestamp(end),
+            }
+            label_events.append(event)
+        labels_df = pandas.DataFrame.from_records(label_events)
+
+        # We want to associate labels with filename
+        for filename in os.listdir(os.path.join(dataset_path, d)):
+            sub = labels_df.copy()
+            sub['filename'] = filename
+            dfs.append(sub)
+
+    df = pandas.concat(dfs, axis=0, ignore_index=False)
+
+    return df
 
 def parse_filename(filename):
     """
@@ -80,6 +125,9 @@ def parse_filename(filename):
 
     setting = None
     tok = filename.split('-')
+
+    #print(filename, len(tok))
+
     if len(tok) == 10:
         setting, subject, session, gender, hand, sensor_loc, age, brush, location, sensor = tok
     elif len(tok) == 9:
@@ -107,38 +155,46 @@ def parse_filename(filename):
 
 
 def load_meta(data):
+    data = data.reset_index()
     meta = pandas.Series(data.filename.unique()).apply(parse_filename).set_index('filename')
-
-    # XXX: drop data with irregular formatting of metadata (filename has 9 components not 10)
-    meta = meta[~meta.setting.isna()]
     
     categoricals = set(meta.columns) - set(['session'])
     for c in categoricals:
         meta[c] = meta[c].astype('category')
     
+    print(meta.sensor_location.value_counts(dropna=False))
+
+    print(meta.brush.value_counts(dropna=False))
+
+    print(meta.sensor.value_counts(dropna=False))
+
     return meta
 
 def extract_relevant(data, meta, only_acc=True, setting=None):
-    mag_columns = ['mag_x', 'mag_y', 'mag_z']
     gyro_columns = ['gyro_x', 'gyro_y', 'gyro_z']
     acc_columns = ['acc_x', 'acc_y', 'acc_z']
+
+    # FIXME: merge/align gyro data with accelerometer
     # only accelerometer data
     if only_acc:
-        acc = data.dropna(subset=acc_columns).drop(columns=mag_columns+gyro_columns)
+        acc = data.dropna(subset=acc_columns).drop(columns=gyro_columns)
     else:
         acc = data
+
+    print('filtered', data.shape, acc.shape)
+
     acc = acc.reset_index()
-    acc = pandas.merge(acc, meta, left_on='filename', right_on='filename')
+    meta = meta.reset_index()
+    common = set(acc['filename']).intersection(meta['filename'])
+    assert common != set()
 
-    if setting is not None:
-        # NOTE: Setting 2 (S2) has more specific protocol
-        # Pause for a few seconds in between different regions and bring the brush to a reference point
-        acc = acc[acc.setting == setting]
+    acc = pandas.merge(acc, meta,
+        left_on='filename',
+        right_on='filename',
+    )
+    #assert len(acc) == len(data)
 
-    # Choose location mounted on brush
-    acc = acc[acc.sensor_location == 'A']
-    # Choose only manual brushing, not electric
-    acc = acc[acc.brush == 'M']
+    print('merged', data.shape, acc.shape)
     acc = acc.drop(columns=['index'])
     return acc
 
@@ -154,7 +210,7 @@ def download(out_dir):
 
     # Verify download
     checksum = checksum_file(archive_path)
-    assert checksum == dataset_sha1, (checksum, dataset_checksum)
+    assert checksum == dataset_sha1, (checksum, dataset_sha1)
 
     # Unpack
     top_path = os.path.join(out_dir, dataset_top_dir)
@@ -162,12 +218,12 @@ def download(out_dir):
         print('Dataset directory already exists, skipping unpacking', top_path)
     else:
         with zipfile.ZipFile(archive_path, 'r') as zip_ref:
-            zip_ref.extractall(top_path)
+            zip_ref.extractall(out_dir)
 
         assert os.path.exists(top_path), top_path
 
     # Sanity check
-    readme_path = os.path.join(top_path, 'Read Me.txt')
+    readme_path = os.path.join(top_path, 'DESCRIPTION.md')
     assert os.path.exists(readme_path), readme_path
 
     return top_path
@@ -175,32 +231,44 @@ def download(out_dir):
 def main():
 
     samplerate = 50
-    out_dir = './data2'
+    out_dir = './data3/hussain2020'
+    os.makedirs(out_dir, exist_ok=True)
+
     dataset_path = download(out_dir)
+
+
+    labels = load_labels(dataset_path).set_index('filename')
+    print(labels.head())    
 
     data = load_data(dataset_path)
     print('Data')
     print(data.head())
+    assert len(data) > 0, data.shape
 
     meta = load_meta(data)
     print('Metadata')
     print(meta.head())
+    assert len(meta) > 1, meta.shape
 
     print("Setting")
     print(meta.setting.value_counts(dropna=False))
 
     # Preprocess
-    acc = extract_relevant(data, meta, setting='S1')
+    acc = extract_relevant(data, meta, only_acc=True, setting=None)
+    assert len(acc) > 0, acc.shape
     print(acc.columns)
     print(acc.head())
 
+    # FIXME: attach label information to data
 
     # Resample to our samplerate
     freq = pandas.Timedelta(1/samplerate, unit='s')
     acc_re = resample(acc, freq=freq).reset_index().drop(columns=['session'])
     acc_re = pandas.merge(acc_re, meta, left_on='filename', right_index=True).drop(columns=['index']).set_index(['filename', 'time'])
 
-    acc_re.to_parquet('./data/hussain2021_brush_manual_s1.parquet')
+    out_path = './data/hussain2021_brush_manual_s1.parquet'
+    acc_re.to_parquet(out_path)
+    print('Wrote', out_path)
 
 if __name__ == '__main__':
     main()
