@@ -84,6 +84,75 @@ The participants brush their teeth for around two minutes in each session follow
 
 235 MB total.
 
+#### Dataset: Toothbrushing Data and Analysis of its Potential Use in Human Activity Recognition Applications
+October 22, 2020
+
+Paper
+https://dl.acm.org/doi/epdf/10.1145/3419016.3431489
+https://researchers.mq.edu.au/en/publications/toothbrushing-data-and-analysis-of-its-potential-use-in-human-act/
+
+Dataset download
+https://zenodo.org/records/4118900
+
+Git repository with code
+https://github.com/icl-mq/toothbrushing-dataset
+
+Zawar Hussain, David Waterworth, et. al
+Macquarie University
+
+17 participants when they brushed their teeth over one week in 5 different locations.
+62 toothbrushing sessions for each of the brush-attached and wearable sensor approaches, using both electric and manual brushes.
+The average duration of each session is 2 minutes.
+One sensor device was attached to the handle of the brush while the other was worn by the participants as a wrist-watch.
+We collected the data from a 3-axis accelerometer and a 3-axis gyroscope at a 200 Hz sampling rate.
+
+3 participants used an electric brush while 14 participants used a manual brush.
+
+Has both electric toothbrush and manual.
+
+Contains labels in form of `labels.json` files.
+Annotated with the 16 sub-activities (areas of mouth) in the toothbrushing activity.
+Used semi automated labeling.
+Estimated approximated brush orientation from raw accelerometer axis and the cumulative sum of the gyroscope axis, and then applied change point analysis.
+
+! Risk of incorrect labels. Not verified against video etc
+
+! Paper did not do subject or session leave-one-out. Accuracy is overestimated.
+
+! some sessions are unlabeled. Are included in dataset
+
+#### ROBAS-UCLA/Toothbrushing-region-detection 
+
+Data and code
+https://github.com/ROBAS-UCLA/Toothbrushing-region-detection
+
+! Zenodo upload is empty. Github repository seems to have data.
+
+
+Paper:
+Monitoring Brushing behaviors using Toothbrush Embedded Motion-Sensors
+https://www.researchgate.net/publication/370381712_Monitoring_Brushing_behaviors_using_Toothbrush_Embedded_Motion-Sensors
+April 2023
+Mahmoud Essalat, Oscar Hernan Madrid Padilla, Vivek Shetty, Gregory Pottie
+
+Dataset of 187 brushing sessions. Including free-form brushing.
+12 participants.
+
+Propose a three-stage method to detect the teeth surfaces brushed during a session, into nine brushing regions.
+ consisting of: pre-processing, brush transition time detection, and time-series classification.
+
+Compared 3 different models. Feature engineering, LSTM on raw samples.
+
+Compared to existing Hussain2020 dataset.
+Found their dataset was 5-10 percentage points F1 score more difficult.
+
+Compared random k-fold to leave-one-subject-out and leave-one-session-out.
+! F1 scores on subject-out as low as 58% with best method.
+
+! nice plots of Euler Angles roll/yaw wrt locations, for a few subjects.
+Shows that the angles are different for different participants.
+
+
 #### UMATBrush
 https://www.sciencedirect.com/science/article/pii/S2352340925007048
 https://figshare.com/articles/dataset/UMATBrush_Traces/28955756
@@ -106,7 +175,9 @@ Dataset characteristics
 Stored as .CSV files.
 
 Table 1. Existing available datasets with sensor data collected with wrist-worn sensors during toothbrushing activities.
-Lists 13 datasets, however vast majority are general Activities of Daily Living (ADL).
+! Lists 13 datasets, however vast majority are general Activities of Daily Living (ADL).
+Toothbrushing is the one of 10-30 activities.
+Usually recorded with a generic device, like a smart watch.
 
 Reports toothbrushing power being typically around 4-5Hz.
 

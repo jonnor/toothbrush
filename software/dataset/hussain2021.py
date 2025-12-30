@@ -1,5 +1,5 @@
 
-
+# FIXME: switch do the data in https://zenodo.org/records/4118900 - has labels
 """
 Utilities for working with toothbrush IMU dataset by Hussain et. al (2021)
 "Dataset for toothbrushing activity using brush-attached and wearable sensors"
@@ -118,14 +118,23 @@ def load_meta(data):
     
     return meta
 
-def extract_relevant(data, meta):
+def extract_relevant(data, meta, only_acc=True, setting=None):
+    mag_columns = ['mag_x', 'mag_y', 'mag_z']
+    gyro_columns = ['gyro_x', 'gyro_y', 'gyro_z']
+    acc_columns = ['acc_x', 'acc_y', 'acc_z']
     # only accelerometer data
-    acc = data.dropna(subset=['acc_x', 'acc_y', 'acc_z']).drop(columns=['mag_x', 'mag_y', 'mag_z', 'gyro_x', 'gyro_y', 'gyro_z'])
+    if only_acc:
+        acc = data.dropna(subset=acc_columns).drop(columns=mag_columns+gyro_columns)
+    else:
+        acc = data
     acc = acc.reset_index()
     acc = pandas.merge(acc, meta, left_on='filename', right_on='filename')
-    # Setting 2 has more specific protocol
-    # Pause for a few seconds in between different regions and bring the brush to a reference point
-    acc = acc[acc.setting == 'S2'] 
+
+    if setting is not None:
+        # NOTE: Setting 2 (S2) has more specific protocol
+        # Pause for a few seconds in between different regions and bring the brush to a reference point
+        acc = acc[acc.setting == setting]
+
     # Choose location mounted on brush
     acc = acc[acc.sensor_location == 'A']
     # Choose only manual brushing, not electric
@@ -170,20 +179,28 @@ def main():
     dataset_path = download(out_dir)
 
     data = load_data(dataset_path)
+    print('Data')
     print(data.head())
 
     meta = load_meta(data)
+    print('Metadata')
     print(meta.head())
 
+    print("Setting")
+    print(meta.setting.value_counts(dropna=False))
+
     # Preprocess
-    acc = extract_relevant(data, meta)
+    acc = extract_relevant(data, meta, setting='S1')
+    print(acc.columns)
+    print(acc.head())
+
 
     # Resample to our samplerate
     freq = pandas.Timedelta(1/samplerate, unit='s')
     acc_re = resample(acc, freq=freq).reset_index().drop(columns=['session'])
     acc_re = pandas.merge(acc_re, meta, left_on='filename', right_index=True).drop(columns=['index']).set_index(['filename', 'time'])
 
-    acc_re.to_parquet('./data2/hussain2021_accelerometer_brush_manual.parquet')
+    acc_re.to_parquet('./data/hussain2021_brush_manual_s1.parquet')
 
 if __name__ == '__main__':
     main()
