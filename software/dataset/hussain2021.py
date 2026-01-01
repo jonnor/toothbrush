@@ -227,7 +227,6 @@ def load_meta(data):
 def extract_relevant(data, brush='M', location='A'):
 
     # Filter the data
-    print(data.columns)
     select = data.copy()
     if brush is not None:
         select = select[select.brush == brush]
@@ -256,33 +255,32 @@ def apply_labels(data, labels):
 
     dfs = []
     unknown_files = []
-    for filename, row in data_labels.iterrows():
-        #print('f', filename)
-        s = row['start']
-        e = row['end']
-        try:
-            sub = data.loc[[filename]]
-        except KeyError as e:
-            unknown_files.append(filename)
-            continue
 
-        #print(sub.head())
+    for filename, sub in data.groupby('filename'):
+        #sub['filename'] = filename
 
-        if not isinstance(sub, pandas.DataFrame):
-            print('Warn: Got Series instead of DataFrame', filename)
-            continue
-
-        sub = sub.set_index('time')
-        sub['filename'] = filename
         sub['label'] = None # default to unknown
-        sub.loc[s:e, 'label'] = row.label
+        sub = sub.reset_index().set_index('time').sort_index()
+
+        filename_labels = data_labels.loc[filename]
+        for _, row in filename_labels.iterrows():
+            #if not isinstance(sub, pandas.DataFrame):
+            #    print('Warn: Got Series instead of DataFrame', filename)
+            #    continue
+    
+            # apply the label
+            s = row['start']
+            e = row['end']
+            sub.loc[s:e, 'label'] = row.label
+            sub['label'] = sub['label']
+
         sub = sub.reset_index()
-        sub['label'] = sub['label'].astype('category')
-        #print('aa', len(sub))
         dfs.append(sub)
 
     assert len(unknown_files) == 0, unknown_files
     out = pandas.concat(dfs, ignore_index=True)
+    out['label'] = out['label'].astype('category')
+    assert len(out) == len(data)
     return out
 
 def download(out_dir):
@@ -342,24 +340,34 @@ def main():
     print(acc.head())
 
     meta = load_meta(data)
+    print(meta)
 
     # Resample to our samplerate
     freq = pandas.Timedelta(1/samplerate, unit='s')
-    acc_re = resample(acc, freq=freq).reset_index().drop(columns=['session'])
-    acc_re = pandas.merge(acc_re, meta, left_on='filename', right_index=True).drop(columns=['index']) # .set_index(['filename', 'time'])
+    resampled = resample(acc, freq=freq).reset_index().drop(columns=['session'])
+
+    print('\n\nresample', acc.shape, resampled.shape)
+
+    resampled = pandas.merge(resampled, meta, left_on='filename', right_index=True).drop(columns=['index']).set_index(['filename', 'time']).sort_index()
+    assert len(resampled) <= len(acc)
 
     #print(acc_re.head())
-    acc_re = apply_labels(acc_re, labels)
+    labeled = apply_labels(resampled, labels)
+    assert len(labeled) == len(resampled), (len(labeled), len(resampled))
+    assert len(labeled) >= 188820, len(labeled)
 
-    print(acc_re.label.value_counts(dropna=False))
-    print(acc_re.head())
+    n_unlabeled = numpy.count_nonzero(labeled.label.isna())
+    unlabeled_ratio = n_unlabeled / len(labeled)
+    assert unlabeled_ratio <= 0.20, unlabeled_ratio
 
-    acc_re = acc_re.reset_index().set_index(['filename', 'time'])
-    #print(acc_re.head())
+    print(labeled.label.value_counts(dropna=False))
+
+    duplicates = labeled[labeled.index.duplicated()]
+    assert duplicates.empty
 
     out_path = './data/hussain2021_brush_manual_s1.parquet'
-    acc_re.to_parquet(out_path)
-    print('Wrote', out_path)
+    labeled.to_parquet(out_path)
+    print('Wrote', out_path, labeled.shape)
 
 if __name__ == '__main__':
     main()
