@@ -12,6 +12,8 @@ import zipfile
 import json
 
 import pandas
+import numpy
+
 from ..utils.downloadutils import download_file, checksum_file
 from software.features.featureutils import resample
 
@@ -72,7 +74,7 @@ def load_data(dataset_path):
     print('concat', out.shape, out.columns)
     
     # Get out time information
-    out['time'] = pandas.to_datetime(out['epoc (ms)'], unit='ms')
+    out['time'] = pandas.to_datetime(out['epoc (ms)'], unit='ms', utc=True)
     out = out.drop(columns=['epoc (ms)'])
 
     # Drop units from colum names
@@ -105,8 +107,10 @@ def load_labels(dataset_path):
             label_events.append(event)
         labels_df = pandas.DataFrame.from_records(label_events)
 
-        # We want to associate labels with filename
+        # We want to associate labels with data filename
         for filename in os.listdir(os.path.join(dataset_path, d)):
+            if filename in ('labels.json', ):
+                continue
             sub = labels_df.copy()
             sub['filename'] = filename
             dfs.append(sub)
@@ -161,16 +165,10 @@ def load_meta(data):
     categoricals = set(meta.columns) - set(['session'])
     for c in categoricals:
         meta[c] = meta[c].astype('category')
-    
-    print(meta.sensor_location.value_counts(dropna=False))
-
-    print(meta.brush.value_counts(dropna=False))
-
-    print(meta.sensor.value_counts(dropna=False))
 
     return meta
 
-def extract_relevant(data, meta, only_acc=True, setting=None):
+def extract_relevant(data, meta, only_acc=True, brush='M', location='A'):
     gyro_columns = ['gyro_x', 'gyro_y', 'gyro_z']
     acc_columns = ['acc_x', 'acc_y', 'acc_z']
 
@@ -181,7 +179,6 @@ def extract_relevant(data, meta, only_acc=True, setting=None):
     else:
         acc = data
 
-    print('filtered', data.shape, acc.shape)
 
     acc = acc.reset_index()
     meta = meta.reset_index()
@@ -194,10 +191,62 @@ def extract_relevant(data, meta, only_acc=True, setting=None):
     )
     #assert len(acc) == len(data)
 
-    print('merged', data.shape, acc.shape)
+    if brush is not None:
+        acc = acc[acc.brush == brush]
+    if location is not None:
+        acc = acc[acc.sensor_location == location]
+
     acc = acc.drop(columns=['index'])
     return acc
 
+def apply_labels(data, labels):
+
+    data = data.reset_index()
+    data = data.set_index('filename')
+
+    data_filenames = numpy.unique(data.index)
+    label_filenames = numpy.unique(labels.index)
+    unknown_labels = set(label_filenames) - set(data_filenames)
+    unlabeled = set(data_filenames) - set(label_filenames)
+
+    # XXX: data might be filtered, so cannot enforce these
+    # assert unknown_labels == set(), unknown_labels
+    # some in data do not have any labels
+    # assert len(unlabeled) < 3, len(unlabeled)
+
+    data_labels = labels[labels.index.isin(data_filenames)]
+    assert len(data_labels) > 1, data_labels.shape
+
+    dfs = []
+    unknown_files = []
+    for filename, row in data_labels.iterrows():
+        #print('f', filename)
+        s = row['start']
+        e = row['end']
+        try:
+            sub = data.loc[[filename]]
+        except KeyError as e:
+            unknown_files.append(filename)
+            continue
+
+        #print(sub.head())
+
+        if not isinstance(sub, pandas.DataFrame):
+            print('Warn: Got Series instead of DataFrame', filename)
+            continue
+
+        sub = sub.set_index('time')
+        sub['filename'] = filename
+        sub['label'] = None # default to unknown
+        sub.loc[s:e, 'label'] = row.label
+        sub = sub.reset_index()
+        sub['label'] = sub['label'].astype('category')
+        #print('aa', len(sub))
+        dfs.append(sub)
+
+    assert len(unknown_files) == 0, unknown_files
+    out = pandas.concat(dfs, ignore_index=True)
+    return out
 
 def download(out_dir):
 
@@ -239,6 +288,9 @@ def main():
 
     labels = load_labels(dataset_path).set_index('filename')
     print(labels.head())    
+    filenames = set(labels.index)
+    #print(filenames)
+
 
     data = load_data(dataset_path)
     print('Data')
@@ -254,17 +306,28 @@ def main():
     print(meta.setting.value_counts(dropna=False))
 
     # Preprocess
-    acc = extract_relevant(data, meta, only_acc=True, setting=None)
+    acc = extract_relevant(data, meta, only_acc=True)
     assert len(acc) > 0, acc.shape
     print(acc.columns)
     print(acc.head())
 
-    # FIXME: attach label information to data
 
     # Resample to our samplerate
     freq = pandas.Timedelta(1/samplerate, unit='s')
     acc_re = resample(acc, freq=freq).reset_index().drop(columns=['session'])
-    acc_re = pandas.merge(acc_re, meta, left_on='filename', right_index=True).drop(columns=['index']).set_index(['filename', 'time'])
+    acc_re = pandas.merge(acc_re, meta, left_on='filename', right_index=True).drop(columns=['index']) # .set_index(['filename', 'time'])
+
+    #print(acc_re.head())
+    acc_re = apply_labels(acc_re, labels)
+
+    print(acc_re.label.value_counts(dropna=True))
+
+    print(acc_re.head())
+
+
+    acc_re = acc_re.reset_index().set_index(['filename', 'time'])
+    #print(acc_re.head())
+
 
     out_path = './data/hussain2021_brush_manual_s1.parquet'
     acc_re.to_parquet(out_path)
