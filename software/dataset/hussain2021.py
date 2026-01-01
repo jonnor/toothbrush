@@ -24,7 +24,7 @@ dataset_filename = 'Toothbrushing_Data.zip'
 dataset_top_dir = 'data'
 
 
-def load_data(dataset_path):
+def load_data_generator(dataset_path, sensors=['W', 'A']):
 
     """
     Expects dataset to have layout of the following form:
@@ -37,13 +37,9 @@ def load_data(dataset_path):
     ....
     """
 
-    dfs = []
-    session_no = 0
-    rows = 0
-
     out_columns = {
         'epoc (ms)': 'time',
-        'elapsed (s)': 'elapsed',
+        #'elapsed (s)': 'elapsed',
         'x-axis (g)': 'acc_x',
         'y-axis (g)': 'acc_y',
         'z-axis (g)': 'acc_z',
@@ -52,34 +48,104 @@ def load_data(dataset_path):
         'z-axis (deg/s)': 'gyro_z',
     }
 
+    missing_labels = []
+
     for d in os.listdir(dataset_path):
+        # Ignore non-session files/directories
         if d in ('DESCRIPTION.md', 'sample', 'metadata.json'):
             continue
-        for f in os.listdir(os.path.join(dataset_path, d)):
-            p = os.path.join(dataset_path, d, f)
-            df = pandas.read_csv(p)
-            other_columns = set(df.columns) - set(out_columns.keys())
-            #print(df.head(10))
-            df = df.drop(columns=other_columns)
-            df['filename'] = f
-            #df['dirname'] = d
-                
-            dfs.append(df)
-            session_no += 1
-            rows += len(df)
-            #break
+
+        # Labels are per session / dirname
+        labels_path = os.path.join(dataset_path, d, 'labels.json')
+        if not os.path.exists(labels_path):
+            missing_labels.append(filename)
+            continue
+
+        # Not all sessions are labeled
+        labels = None
+        if os.path.exists(labels_path):
+            labels = load_label_file(labels_path)
+        else:
+            missing_labels.append(filename)
+
+
+        #print('d', d, None if labels is None else len(labels))
+
+        # There are files for accelerometer+gyro, for brush-attached and a wrist-attached sensor
+
+        for sensor in sensors:
+
+            # collect the accel+gyro before merging
+            sensor_data = {}
+            all_files = []
+            for filename in os.listdir(os.path.join(dataset_path, d)):
+                all_files.append(filename)
+                if filename == 'labels.json':
+                    continue
+
+                meta = parse_filename(filename)
+                #print(meta.items)
+    
+                if meta.sensor_location != sensor:
+                    continue
+
+                #print('ff', sensor, filename)
+                #continue
+
+                p = os.path.join(dataset_path, d, filename)
+
+                df = pandas.read_csv(p)
+
+                other_columns = set(df.columns) - set(out_columns.keys())
+                df = df.drop(columns=other_columns)
+                df = df.rename(columns=out_columns)
+                df['time'] = pandas.to_datetime(df['time'], unit='ms', utc=True)
+                df['filename'] = filename
+                #df['session'] = d
+                for key, value in meta.items():
+                    df[key] = value
+
+                sensor_data[meta.sensor] = df
+
+            # Merge the data for one sensor
+            #print('s', sensor_data.keys(), all_files)
+            acc = sensor_data['A']
+            gyro = sensor_data['G'][['time', 'gyro_x', 'gyro_y', 'gyro_z']]
+            data = pandas.merge(acc, gyro, right_on='time', left_on='time')
+            yield data
+
+
+def load_data(dataset_path, **kwargs):
+
+    generator = load_data_generator(dataset_path, **kwargs)
+    dfs = []
+    rows = 0
+    for df in generator:
+        dfs.append(df)
+        rows += len(df)
 
     print('files', len(dfs), rows)
     out = pandas.concat(dfs, axis=0, ignore_index=True)
     print('concat', out.shape, out.columns)
-    
-    # Get out time information
-    out['time'] = pandas.to_datetime(out['epoc (ms)'], unit='ms', utc=True)
-    out = out.drop(columns=['epoc (ms)'])
-
-    # Drop units from colum names
-    out = out.rename(columns=out_columns)
+  
     return out
+
+
+def load_label_file(labels_path):
+
+    # Load and normalize label info
+    labels = json.loads(open(labels_path).read())
+    label_events = []
+    for classname, (start, end) in labels.items():
+        event = {
+            'label': classname,
+            'start': pandas.Timestamp(start),
+            'end': pandas.Timestamp(end),
+        }
+        label_events.append(event)
+    labels_df = pandas.DataFrame.from_records(label_events)
+
+    return labels_df
 
 def load_labels(dataset_path):
 
@@ -95,17 +161,7 @@ def load_labels(dataset_path):
             missing_labels.append(filename)
             continue
     
-        # Load and normalize label info
-        labels = json.loads(open(labels_path).read())
-        label_events = []
-        for classname, (start, end) in labels.items():
-            event = {
-                'label': classname,
-                'start': pandas.Timestamp(start),
-                'end': pandas.Timestamp(end),
-            }
-            label_events.append(event)
-        labels_df = pandas.DataFrame.from_records(label_events)
+        labels_df = load_label_file(labels_path)
 
         # We want to associate labels with data filename
         for filename in os.listdir(os.path.join(dataset_path, d)):
@@ -168,36 +224,17 @@ def load_meta(data):
 
     return meta
 
-def extract_relevant(data, meta, only_acc=True, brush='M', location='A'):
-    gyro_columns = ['gyro_x', 'gyro_y', 'gyro_z']
-    acc_columns = ['acc_x', 'acc_y', 'acc_z']
+def extract_relevant(data, brush='M', location='A'):
 
-    # FIXME: merge/align gyro data with accelerometer
-    # only accelerometer data
-    if only_acc:
-        acc = data.dropna(subset=acc_columns).drop(columns=gyro_columns)
-    else:
-        acc = data
-
-
-    acc = acc.reset_index()
-    meta = meta.reset_index()
-    common = set(acc['filename']).intersection(meta['filename'])
-    assert common != set()
-
-    acc = pandas.merge(acc, meta,
-        left_on='filename',
-        right_on='filename',
-    )
-    #assert len(acc) == len(data)
-
+    # Filter the data
+    print(data.columns)
+    select = data.copy()
     if brush is not None:
-        acc = acc[acc.brush == brush]
+        select = select[select.brush == brush]
     if location is not None:
-        acc = acc[acc.sensor_location == location]
+        select = select[select.sensor_location == location]
 
-    acc = acc.drop(columns=['index'])
-    return acc
+    return select
 
 def apply_labels(data, labels):
 
@@ -287,6 +324,7 @@ def main():
 
 
     labels = load_labels(dataset_path).set_index('filename')
+
     print(labels.head())    
     filenames = set(labels.index)
     #print(filenames)
@@ -297,20 +335,13 @@ def main():
     print(data.head())
     assert len(data) > 0, data.shape
 
-    meta = load_meta(data)
-    print('Metadata')
-    print(meta.head())
-    assert len(meta) > 1, meta.shape
-
-    print("Setting")
-    print(meta.setting.value_counts(dropna=False))
-
     # Preprocess
-    acc = extract_relevant(data, meta, only_acc=True)
+    acc = extract_relevant(data)
     assert len(acc) > 0, acc.shape
     print(acc.columns)
     print(acc.head())
 
+    meta = load_meta(data)
 
     # Resample to our samplerate
     freq = pandas.Timedelta(1/samplerate, unit='s')
@@ -320,14 +351,11 @@ def main():
     #print(acc_re.head())
     acc_re = apply_labels(acc_re, labels)
 
-    print(acc_re.label.value_counts(dropna=True))
-
+    print(acc_re.label.value_counts(dropna=False))
     print(acc_re.head())
-
 
     acc_re = acc_re.reset_index().set_index(['filename', 'time'])
     #print(acc_re.head())
-
 
     out_path = './data/hussain2021_brush_manual_s1.parquet'
     acc_re.to_parquet(out_path)
